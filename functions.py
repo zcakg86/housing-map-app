@@ -137,6 +137,7 @@ def display_sales_history(data, monthly_data):
 
     st.table(data.sort_values(by=['sale_date'], ascending = False).set_index('sale_date')\
              .head(20).style.format({"price_per_sqft": "{:,.0f}","sale_price": "{:,.0f}"}))
+    
 def display_listings_aggregate(data, field_name, metric = 'count', metric_title = 'Total'):
     if metric == 'count':
         total = data[field_name].count()
@@ -145,6 +146,7 @@ def display_listings_aggregate(data, field_name, metric = 'count', metric_title 
     if metric == 'median':
         total = data[field_name].quantile(0.5)
     st.metric(metric_title,"{:,.0f}".format(total))
+    
 def display_map(listings_data, aggregate_listing_data, places_data, places_name = 'places'):
 
     # green to red, using lower and upper quartiles
@@ -220,6 +222,7 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
 
     # Add places
     places = folium.FeatureGroup(name=places_name, control=True).add_to(listings_map)
+    
     for i in range(0, len(places_data)):
         iframe = folium.IFrame('<style> body {font-family: Tahoma, sans-serif;}</style>' + \
                                '<b>' + places_data.iloc[i]['name'] + '</b><br>' + places_data.iloc[i][
@@ -236,17 +239,19 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
         ).add_to(listings_map)
     folium.LayerControl().add_to(listings_map)
 
-
     st_map = st_folium(listings_map, width=800, height=600)
 
     h3_08_name = ''
     bounding_box = ''
-    #if st_map['last_active_drawing']:
-    #    h3_08_name = st_map['last_active_drawing']['properties']['h3_08']
-    if st_map['bounds']:
+    
+    ## not used: not using h3_8 click
+    ## if st_map['last_active_drawing']:
+    ##    h3_08_name = st_map['last_active_drawing']['properties']['h3_08']
+
+    if st_map['bounds']: # map should have bounds, to use in filter
         bounding_box = [st_map['bounds']['_southWest']['lat'],
                         st_map['bounds']['_southWest']['lng'],
                         st_map['bounds']['_northEast']['lat'],
                         st_map['bounds']['_northEast']['lng']]
-    return bounding_box #, h3_08_name
+    return bounding_box ##, h3_08_name
 
