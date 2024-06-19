@@ -15,8 +15,6 @@ from langchain_experimental.agents.agent_toolkits import create_csv_agent
 APP_TITLE = 'Housing search'
 APP_SUB_TITLE = 'Produced by Marie Thompson'
 
-
-
 def main():
     st.set_page_config(APP_TITLE, layout = 'wide')
     st.title(APP_TITLE)
@@ -35,9 +33,6 @@ def main():
     # display filters and map
     beds_min, beds_max = display_bedroom_filter(sales_data)
     date_min, date_max = display_time_filters(sales_data,'sale_date')
-
-
-
 
     # Display metrics
     col_left,col_right = st.columns(2)
