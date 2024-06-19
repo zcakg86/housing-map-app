@@ -13,8 +13,13 @@ from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain.agents import (AgentExecutor, Tool)
 from langchain.memory import ConversationBufferMemory
+from functions import *
+import h3pandas
+import os
 
+from langchain_experimental.agents.agent_toolkits import create_csv_agent
 from langchain.agents.initialize import initialize_agent
+
 #response_schemas = [
 #    ResponseSchema(name="answer", description="answer to the user's question"),
 #    ResponseSchema(
@@ -39,7 +44,8 @@ def generate_response(input_text, dataframes, container):
     dataframe_agent = create_pandas_dataframe_agent(
         llm=OpenAI(temperature=0, model="davinci-002"),
         df=dataframes,
-        allow_dangerous_code = True)
+        allow_dangerous_code = True,
+        handle_parsing_errors = True)
     #tools = [
     #    Tool(
     #        name="dataframe_agent",
@@ -54,7 +60,7 @@ def generate_response(input_text, dataframes, container):
     #    verbose=True
     #)
 
-    container.write(dataframe_agent.invoke(input_text, return_only_outputs=False))
+    container.write(dataframe_agent.invoke(input_text, return_only_outputs=True))
 
 def display_bedroom_filter(data):
     beds_list = list(data['beds'].unique())
@@ -98,7 +104,7 @@ def filter_listings(data, bounding_box, beds_min, beds_max):
         data = data[data['bedrooms'].between(int(beds_min),int(beds_max))]
     return data
 
-def aggregate_sales(data, filtered_data=None):
+def aggregate_sales(data, filtered_data):
     all_sales_monthly = data.groupby('year_month').agg({'price_per_sqft': 'median', 'sqft': 'size'})\
                         .rename(columns={'sqft': 'observations'}).reset_index()
     all_sales_monthly['Location']='All areas'

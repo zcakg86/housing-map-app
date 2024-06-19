@@ -7,7 +7,7 @@ import plotly.express as px
 from streamlit_folium import st_folium
 import branca.colormap as cm
 import h3pandas
-from langchain.llms import OpenAI
+
 import os
 
 from langchain_experimental.agents.agent_toolkits import create_csv_agent
@@ -22,11 +22,11 @@ def main():
     # load data
     sales_data = pd.read_csv('data/sales_2021_on_geo.csv')
     sales_data = sales_data.h3.geo_to_h3(resolution = 8, lat_col = 'lat', lng_col = 'lng')
-    sales_data = sales_data.h3.h3_to_geo_boundary()
+    sales_data = sales_data.h3.h3_to_geo_boundary().reset_index()
 
     listings_data = pd.read_csv('data/all-listings.csv')
     listings_data = listings_data.h3.geo_to_h3(resolution = 8, lat_col = 'latitude', lng_col = 'longitude')
-    listings_data = listings_data.h3.h3_to_geo_boundary()
+    listings_data = listings_data.h3.h3_to_geo_boundary().reset_index()
     grouped_listings = aggregate_listings(listings_data)
 
     daycare_data = pd.read_csv('data/daycares.csv')
@@ -39,10 +39,11 @@ def main():
     if location_chat:
         chat.write(f"User has sent the following prompt: {location_chat}")
         generate_response(location_chat,
-                          dataframes = [daycare_data.rename(columns={'geocodes.main.latitude':'latitude',
-                                                                     'geocodes.main.longitude':'longitude'})\
-                                        .loc[:,['name','latitude','longitude']],
-                                        listings_data.loc[:,['price','latitude','longitude','propertyType','bedrooms']]],
+                        #  dataframes = [daycare_data.rename(columns={'geocodes.main.latitude':'latitude',
+                        #                                             'geocodes.main.longitude':'longitude'})\
+                        #                .loc[:,['name','latitude','longitude']],
+                        #                listings_data.loc[:,['price','latitude','longitude','propertyType','bedrooms']]],
+                          dataframes = [daycare_data,listings_data.reset_index()],                                  
                           container = chat)
         
     # Display metrics
