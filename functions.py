@@ -227,7 +227,7 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
                                width=200, height=100)
         popup = folium.Popup(iframe, min_width=200, max_width=220, max_height=200)
         tooltip = folium.Tooltip('<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:20px;color:black}</style>'+places_data.iloc[i]['name'])
-        icon = folium.features.CustomIcon('noun-baby-6828055.png', icon_size=(40, 40))
+        icon = folium.features.CustomIcon('data/noun-baby-6828055.png', icon_size=(40, 40))
         folium.Marker(
             location=[places_data.iloc[i]['geocodes.main.latitude'], places_data.iloc[i]['geocodes.main.longitude']],
             popup=popup,
