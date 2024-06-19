@@ -54,5 +54,10 @@
 	"remoteUser": "vscode",
 	"features": {
 		"azure-cli": "latest"
+	},
+
+	"remoteEnv": {
+		// Use a GitHub Codespaces secret:
+		"openai_api_key": "${localEnv:OPENAI_API_KEY}"
 	}
 }
