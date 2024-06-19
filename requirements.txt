@@ -10,8 +10,10 @@ chromadb
 streamlit
 openai
 langchain
+langchain-experimental
 geopandas
 folium
 streamlit_folium
 branca
 tabulate
+plotly_express

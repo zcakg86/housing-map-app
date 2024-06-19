@@ -34,11 +34,12 @@ from langchain.agents.initialize import initialize_agent
 #format_instructions = output_parser.get_format_instructions()
 
 
-def generate_response(input_text, dataframes):
+def generate_response(input_text, dataframes, container):
 
     dataframe_agent = create_pandas_dataframe_agent(
         llm=OpenAI(temperature=0, model="davinci-002"),
-        df=dataframes, )
+        df=dataframes,
+        allow_dangerous_code = True)
     tools = [
         Tool(
             name="dataframe_agent",
@@ -53,7 +54,7 @@ def generate_response(input_text, dataframes):
         verbose=True
     )
 
-    st.write(agent.invoke(input_text, return_only_outputs=True))
+    container.write(agent.invoke(input_text, return_only_outputs=True))
 
 def display_bedroom_filter(data):
     beds_list = list(data['beds'].unique())
@@ -73,10 +74,11 @@ def display_time_filters(data, date_column):
     #st.header(f'Sale date filter: {min} to {max}')
     return min, max
 
-def filter_sales_data(data, bounding_box, date_min, date_max, beds_min, beds_max):
-    if bounding_box:
-        data = data[data['lat'].between(bounding_box[0],bounding_box[2])]
-        data = data[data['lng'].between(bounding_box[1], bounding_box[3])]
+def filter_sales_data(data, date_min, date_max, beds_min, beds_max):
+    # removed bounding_box argument as not used in current form
+    #if bounding_box:
+    #    data = data[data['lat'].between(bounding_box[0],bounding_box[2])]
+    #    data = data[data['lng'].between(bounding_box[1], bounding_box[3])]
     if beds_min & beds_max:
         data = data[data['beds'].between(int(beds_min),int(beds_max))]
     if date_min & date_max:
@@ -96,11 +98,10 @@ def filter_listings(data, bounding_box, beds_min, beds_max):
         data = data[data['bedrooms'].between(int(beds_min),int(beds_max))]
     return data
 
-def aggregate_sales(data, filtered_data):
+def aggregate_sales(data, filtered_data=None):
     all_sales_monthly = data.groupby('year_month').agg({'price_per_sqft': 'median', 'sqft': 'size'})\
                         .rename(columns={'sqft': 'observations'}).reset_index()
     all_sales_monthly['Location']='All areas'
-
     # calculate monthly sales for filtered data
     filtered_sales_monthly = filtered_data.groupby('year_month').agg({'price_per_sqft': 'median', 'sqft': 'size'})\
                              .rename(columns={'sqft': 'observations'}).reset_index()
@@ -163,10 +164,10 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
                                "{:.0f}".format(listings_data.iloc[i]['bathrooms']) + '<br>' + 'Living Area: ' + \
                                "{:,.0f}".format(listings_data.iloc[i]['livingArea']) + '<br>$/SqFt: ' + \
                                "{:.0f}".format(listings_data.iloc[i]['pricePerSqft']) + '<br><img src="' + \
-                               listings_data.iloc[i][
-                                   'imgSrc'] + '" alt="Property image" style="width:200px;height:200px;">' + \
-                               '<br>' + '<a ' + 'href="https://www.zillow.com/homedetails/' + str(
-            int(listings_data.iloc[i]['zpid'])) + '_zpid' + '" target="_blank">See listing</a>', \
+                               listings_data.iloc[i]['imgSrc'] + \
+                                '" alt="Property image" style="width:200px;height:200px;">' + \
+                                '<br>' + '<a ' + 'href="https://www.zillow.com/homedetails/' + str(
+                                int(listings_data.iloc[i]['zpid'])) + '_zpid' + '" target="_blank">See listing</a>', \
                                width=250, height=300)
 
         popup = folium.Popup(iframe, min_width=250, max_width=250, min_height=320, max_height=400)
@@ -236,10 +237,13 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
             popup=popup,
             tooltip=tooltip,
             icon=icon
-        ).add_to(listings_map)
+        ).add_to(places)
+
+    places.add_to(listings_map)
+
     folium.LayerControl().add_to(listings_map)
 
-    st_map = st_folium(listings_map, width=800, height=600)
+    st_map = st_folium(listings_map, use_container_width=True, height = 600)
 
     h3_08_name = ''
     bounding_box = ''
