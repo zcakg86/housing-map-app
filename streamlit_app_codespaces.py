@@ -39,9 +39,12 @@ def main():
     if location_chat:
         chat.write(f"User has sent the following prompt: {location_chat}")
         generate_response(location_chat,
-                          dataframes = [daycare_data.loc[:,['name','geocodes.main.latitude','geocodes.main.longitude']],
+                          dataframes = [daycare_data.rename(columns={'geocodes.main.latitude':'latitude',
+                                                                     'geocodes.main.longitude':'longitude'})\
+                                        .loc[:,['name','latitude','longitude']],
                                         listings_data.loc[:,['price','latitude','longitude','propertyType','bedrooms']]],
                           container = chat)
+        
     # Display metrics
     col_left, col_right = st.columns((2,1))
     with col_left:

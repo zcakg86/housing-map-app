@@ -5,7 +5,7 @@ import folium.plugins
 import plotly.express as px
 from streamlit_folium import st_folium
 import branca.colormap as cm
-from langchain.llms import OpenAI
+from langchain_community.llms import OpenAI
 import geopandas
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from langchain.agents.agent_types import AgentType
@@ -40,21 +40,21 @@ def generate_response(input_text, dataframes, container):
         llm=OpenAI(temperature=0, model="davinci-002"),
         df=dataframes,
         allow_dangerous_code = True)
-    tools = [
-        Tool(
-            name="dataframe_agent",
-            func=dataframe_agent.invoke,
-            description="Read from the data used in the app."
-        ),
-    ]
-    agent = initialize_agent(
-        llm=OpenAI(temperature=0, model="davinci-002"),
-        tools =tools,
-        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True
-    )
+    #tools = [
+    #    Tool(
+    #        name="dataframe_agent",
+    #        func=dataframe_agent.invoke,
+    #        description="Respond based on the dataframe_agent only."
+    #    ),
+    #]
+    #agent = initialize_agent(
+    #    llm=OpenAI(temperature=0, model="davinci-002"),
+    #    tools = tools,
+    #    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    #    verbose=True
+    #)
 
-    container.write(agent.invoke(input_text, return_only_outputs=True))
+    container.write(dataframe_agent.invoke(input_text, return_only_outputs=False))
 
 def display_bedroom_filter(data):
     beds_list = list(data['beds'].unique())

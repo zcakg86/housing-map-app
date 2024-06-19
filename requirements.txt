@@ -11,6 +11,7 @@ streamlit
 openai
 langchain
 langchain-experimental
+langchain-community
 geopandas
 folium
 streamlit_folium
