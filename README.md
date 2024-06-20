@@ -1,9 +1,9 @@
 # Housing Map App
 This project is an implementation of an interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
-
+URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/
 Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI's GPT-3.5-turbo-0125 model is used for the chat function.
-![alt text](streamlit_app.png "Title")
+![screenshot of the app](streamlit_app.png "App screenshot")
 ## Aims
 The primary aim is to provide develop python programming skills,  utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
 * Look in to spatial representations: I want to try out h3index as a grid hierarchical spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
