@@ -1,8 +1,8 @@
 # Housing Map App
-This project is an implementation interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
+This project is an implementation of an interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
-Streamlit is used to build the app. The project is hosted with Codespaces. Coding is all written in Python.
+Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python.
 
 ## Aims
 The primary aim is to provide develop python programming, utilising spatial packages to develop novel ways to present housing market analysis, for the individual user.
@@ -14,6 +14,7 @@ The primary aim is to provide develop python programming, utilising spatial pack
 * Call listing and POI APIs directly in app (currently the data app uses stored data and is slow, and out of date).
 * Move data processing to pyspark (currently using pandas)
 * Provide more complex temporal and spatial analysis utilising historical sales data.
+* Improve visualisation of relative prices.
 * Build functionality of AI chat. 
 
 ## Data
