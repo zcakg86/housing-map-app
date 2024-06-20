@@ -44,13 +44,14 @@ def display_bedroom_filter(data, container):
     #st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
     return beds_min, beds_max
 
-def display_time_filters(data, date_column, container):
-    """Display date filter based on data values, into specified container"""
+def display_time_filters(data, date_column, start_date, container):
+    """Display date filter based on data values, into specified container. Start date should be in format 'YYYY-MM'"""
     year_month_list = list(data[date_column].str[0:7].unique())
+    # Sort list and return minimum and maximum date
     year_month_list.sort()
     min = year_month_list[0]
     max = year_month_list[len(year_month_list)-1]
-    min, max = container.select_slider('Monthly filter for sales history', options=year_month_list, value=('2023-01', max))
+    min, max = container.select_slider('Monthly filter for sales history', options=year_month_list, value=(start_date, max))
     #st.header(f'Sale date filter: {min} to {max}')
     return min, max
 
@@ -109,7 +110,7 @@ def display_sales_aggregate(data, field_name, metric = 'count', metric_title = '
 
 def display_sales_history(data, monthly_data):
     """"Display historic sales chart and recent sales"""
-    st.subheader("Median sale price per sqft")
+    st.subheader("Historic sales prices")
     fig = px.line(monthly_data, x="year_month", y="price_per_sqft", color = 'Location',
                   labels = {'year_month':'month','price_per_sqft':'price per square foot','observations':'number of sales'})
     fig.update_layout(legend_title_text=None, xaxis_type='category')
@@ -218,13 +219,16 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
     
     # for each item create pop up and use custom icon
     for i in range(0, len(places_data)):
-        iframe = folium.IFrame('<style> body {font-family: Tahoma, sans-serif;}</style>' + \
+        # frame which shows address of point
+        iframe = folium.IFrame('<style> body {font-family: Tahoma, sans-serif;font-size:10px}</style>' + \
                                '<b>' + places_data.iloc[i]['name'] + '</b><br>' + places_data.iloc[i][
-                                   'location.formatted_address'],
-                               width=200, height=100)
-        popup = folium.Popup(iframe, min_width=200, max_width=220, max_height=200)
+                                   'location.formatted_address'])
+        popup = folium.Popup(iframe, min_width=150, max_width=150, max_height=70)
+        # Tooltip gives only name
         tooltip = folium.Tooltip('<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:20px;color:black}</style>'+places_data.iloc[i]['name'])
-        icon = folium.features.CustomIcon('data/noun-baby-6828055.png', icon_size=(40, 40))
+        # Use custom icon
+        icon = folium.features.CustomIcon('data/noun-baby-6828055.png', icon_size=(30, 30))
+        # Set market at coordinates
         folium.Marker(
             location=[places_data.iloc[i]['geocodes.main.latitude'], places_data.iloc[i]['geocodes.main.longitude']],
             popup=popup,
