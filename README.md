@@ -3,7 +3,7 @@ This project is an implementation of an interactive web map, utilising spatial a
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
 Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI's GPT-3.5-turbo-0125 model is used for the chat function.
-
+![alt text](Isolated.png "Title")
 ## Aims
 The primary aim is to provide develop python programming skills,  utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
 * Look in to spatial representations: I want to try out h3index as a grid hierarchical spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
@@ -12,10 +12,14 @@ The primary aim is to provide develop python programming skills,  utilising clou
   
 ## Next Steps
 * Call listings and POI APIs directly in app (currently the data app uses stored data and is slow, and out of date).
-* Move data processing to pyspark (currently using pandas)
+* Add neigbourhood identifier to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
+* Move data processing to pyspark (currently using pandas).
+* Deploy app to URL on request.
 * Provide more complex temporal and spatial analysis utilising historical sales data.
 * Improve visualisation of relative prices.
-* Build functionality of AI chat. 
+* Build functionality of AI chat.
+* Allow AI chat response to interact with map (move location).
+* Improve overall presentation and formatting.
 
 ## Data
 Sales data: kingco_sales.csv\
