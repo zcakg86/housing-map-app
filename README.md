@@ -1,8 +1,20 @@
 # Housing Map App
-This project is to implement an interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
+This project is an implementation interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
+Streamlit is used to build the app. The project is hosted with Codespaces. Coding is all written in Python.
 
+## Aims
+The primary aim is to provide develop python programming, utilising spatial packages to develop novel ways to present housing market analysis, for the individual user.
+* Look in to spatial representations: I want to try out h3index as a grid hierarchical spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
+* Combine data feeds on listings, points of interest and transportation to assist with location choice.
+* Explore retrieval augmented generation with foundation models to answer user queries on presented data.
+  
+## Next Steps
+* Call listing and POI APIs directly in app (currently the data app uses stored data and is slow, and out of date).
+* Move data processing to pyspark (currently using pandas)
+* Provide more complex temporal and spatial analysis utilising historical sales data.
+* Build functionality of AI chat. 
 
 ## Data
 Sales data: kingco_sales.csv
@@ -29,6 +41,3 @@ https://gis-kingcounty.opendata.arcgis.com/
 
 30-Year Fixed Rate Mortgage Average in the United States
 https://fred.stlouisfed.org/series/MORTGAGE30US
-
-## Resources
-https://www.kaggle.com/code/reidjohnson/house-price-eda-and-modeling-with-python
