@@ -1,9 +1,10 @@
 from functions import *
 
-APP_TITLE = 'Housing search'
-APP_SUB_TITLE = 'Produced by Marie Thompson'
+APP_TITLE = 'Housing search map app'
+APP_SUB_TITLE = 'Produced by Marie Thompson using streamlit. Data from King County Assessors, Zillow and Foursquare API'
 
 def main():
+
     st.set_page_config(APP_TITLE, layout = 'wide')
     st.title(APP_TITLE)
     st.caption(APP_SUB_TITLE)
@@ -19,9 +20,10 @@ def main():
     grouped_listings = aggregate_listings(listings_data)
 
     daycare_data = pd.read_csv('data/daycares.csv')
-    # display filters and map
-    beds_min, beds_max = display_bedroom_filter(sales_data)
-    date_min, date_max = display_time_filters(sales_data,'sale_date')
+
+    # display filters and chat in sidebar
+    beds_min, beds_max = display_bedroom_filter(sales_data, st.sidebar)
+    date_min, date_max = display_time_filters(sales_data,'sale_date', st.sidebar)
 
     chat = st.sidebar.container()
     location_chat = chat.chat_input(placeholder="Chat about listings")
@@ -38,10 +40,12 @@ def main():
     # Display metrics
     col_left, col_right = st.columns((2,1))
     with col_left:
+        # create container
         container = st.container(border = False)
+        # display map and return map bounds
         bounding_box = display_map(listings_data=listings_data, aggregate_listing_data=grouped_listings, places_data = daycare_data, places_name = 'Day cares')
         col1, col2 = container.columns(2)
-        # listings
+        # filter listings based on map bounds and bedroom filter
         listings = filter_listings(data=listings_data, bounding_box=bounding_box, beds_min=beds_min, beds_max=beds_max)
         with col1:
             display_listings_aggregate(data=listings, field_name='price', metric='count', metric_title=f'Total listings')
@@ -50,11 +54,12 @@ def main():
 
     with col_right: # presenting sales history data
         st.header("Sales history")
-        # filter data with bounding_box and dates/beds and calculate 
-        sales = filter_sales_data(sales_data, date_min=int(date_min.replace('-', '')),
+        # filter data with bounding_box and dates/beds 
+        sales = prepare_sales_data(sales_data, date_min=int(date_min.replace('-', '')),
                                   date_max=int(date_max.replace('-', '')), beds_min=beds_min, beds_max=beds_max)
         filtered_sales = sales[sales['lat'].between(bounding_box[0],bounding_box[2])]
         filtered_sales = sales[sales['lng'].between(bounding_box[1], bounding_box[3])]
+        # aggregate by month for displaying chart
         monthly_sales = aggregate_sales(data = sales, filtered_data = filtered_sales)  
         col3,col4 = st.columns(2)
         with col3:
