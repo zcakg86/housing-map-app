@@ -7,7 +7,8 @@ import plotly.express as px
 from streamlit_folium import st_folium
 import branca.colormap as cm
 import h3pandas
-
+import math
+import geopy
 import os
 
 from langchain_experimental.agents.agent_toolkits import create_csv_agent
@@ -39,11 +40,11 @@ def main():
     if location_chat:
         chat.write(f"User has sent the following prompt: {location_chat}")
         generate_response(location_chat,
-                        #  dataframes = [daycare_data.rename(columns={'geocodes.main.latitude':'latitude',
-                        #                                             'geocodes.main.longitude':'longitude'})\
-                        #                .loc[:,['name','latitude','longitude']],
-                        #                listings_data.loc[:,['price','latitude','longitude','propertyType','bedrooms']]],
-                          dataframes = [daycare_data,listings_data.reset_index()],                                  
+                          dataframes = [daycare_data.rename(columns={'geocodes.main.latitude':'latitude',
+                                                                     'geocodes.main.longitude':'longitude'})\
+                                        .loc[:,['name','latitude','longitude']],
+                                        listings_data.loc[:,['price','latitude','longitude','propertyType','bedrooms']]],
+                        #  dataframes = [daycare_data,listings_data.reset_index()],                                  
                           container = chat)
         
     # Display metrics

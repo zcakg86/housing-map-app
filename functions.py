@@ -6,6 +6,7 @@ import plotly.express as px
 from streamlit_folium import st_folium
 import branca.colormap as cm
 from langchain_community.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 import geopandas
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from langchain.agents.agent_types import AgentType
@@ -16,7 +17,8 @@ from langchain.memory import ConversationBufferMemory
 from functions import *
 import h3pandas
 import os
-
+import math
+import geopy
 from langchain_experimental.agents.agent_toolkits import create_csv_agent
 from langchain.agents.initialize import initialize_agent
 
@@ -42,10 +44,12 @@ from langchain.agents.initialize import initialize_agent
 def generate_response(input_text, dataframes, container):
 
     dataframe_agent = create_pandas_dataframe_agent(
-        llm=OpenAI(temperature=0, model="davinci-002"),
+        llm=ChatOpenAI(temperature=0, model='gpt-3.5-turbo-0125'),
         df=dataframes,
         allow_dangerous_code = True,
-        handle_parsing_errors = True)
+        verbose = True,
+        handle_parsing_errors = True,
+        agent_type="openai-tools")
     #tools = [
     #    Tool(
     #        name="dataframe_agent",
@@ -60,7 +64,7 @@ def generate_response(input_text, dataframes, container):
     #    verbose=True
     #)
 
-    container.write(dataframe_agent.invoke(input_text, return_only_outputs=True))
+    container.write(dataframe_agent.invoke(input_text, return_only_outputs=False))
 
 def display_bedroom_filter(data):
     beds_list = list(data['beds'].unique())

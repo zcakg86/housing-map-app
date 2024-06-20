@@ -5,6 +5,8 @@ pymilvus
 llama-index-vector-stores-milvus
 llama-index-vector-stores-chroma
 milvus
+math
+geopy
 h3pandas
 chromadb
 streamlit
