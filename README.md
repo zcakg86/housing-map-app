@@ -2,7 +2,7 @@
 This project is an implementation of an interactive web map, utilising spatial analysis and AI to assist in housing search and housing market understanding.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
-Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI GPT-3.5-turbo-0125 is used for the chat function.
+Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI's GPT-3.5-turbo-0125 model is used for the chat function.
 
 ## Aims
 The primary aim is to provide develop python programming skills,  utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
@@ -11,7 +11,7 @@ The primary aim is to provide develop python programming skills,  utilising clou
 * Explore retrieval augmented generation with foundation models to answer user queries on presented data.
   
 ## Next Steps
-* Call listing and POI APIs directly in app (currently the data app uses stored data and is slow, and out of date).
+* Call listings and POI APIs directly in app (currently the data app uses stored data and is slow, and out of date).
 * Move data processing to pyspark (currently using pandas)
 * Provide more complex temporal and spatial analysis utilising historical sales data.
 * Improve visualisation of relative prices.
