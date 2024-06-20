@@ -18,13 +18,13 @@ The primary aim is to provide develop python programming, utilising spatial pack
 * Build functionality of AI chat. 
 
 ## Data
-Sales data: kingco_sales.csv
-https://www.kaggle.com/datasets/andykrause/kingcountysales/data
-Andy Krause
+Sales data: kingco_sales.csv\
+https://www.kaggle.com/datasets/andykrause/kingcountysales/data\
+Andy Krause\
 Data produced from King County Assessors Office data.
 
-Listing data: Zillow data, from RapidAPI sources
-https://rapidapi.com/apimaker/api/zillow-com1
+Listing data: Zillow data, from RapidAPI sources\
+https://rapidapi.com/apimaker/api/zillow-com1\
 https://rapidapi.com/s.mahmoud97/api/zillow56
 
 Point of interest data:
