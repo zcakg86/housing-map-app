@@ -23,8 +23,8 @@ def main():
     beds_min, beds_max = display_bedroom_filter(sales_data)
     date_min, date_max = display_time_filters(sales_data,'sale_date')
 
-    chat = st.container()
-    location_chat = chat.chat_input(placeholder="Ask about a location")
+    chat = st.sidebar.container()
+    location_chat = chat.chat_input(placeholder="Chat about listings")
     if location_chat:
         chat.write(f"User has sent the following prompt: {location_chat}")
         generate_response(location_chat,

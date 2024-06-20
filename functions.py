@@ -64,7 +64,7 @@ def generate_response(input_text, dataframes, container):
     #    verbose=True
     #)
 
-    container.write(dataframe_agent.invoke(input_text, return_only_outputs=False))
+    container.write(dataframe_agent.invoke(input_text, return_only_outputs=True)['output'])
 
 def display_bedroom_filter(data):
     beds_list = list(data['beds'].unique())
