@@ -5,7 +5,7 @@ Listings data is combined with historic sales data (for trends), and points of i
 Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI GPT-3.5-turbo-0125 is used for the chat function.
 
 ## Aims
-The primary aim is to provide develop python programming, utilising spatial packages to develop novel ways to present housing market analysis, for the individual user.
+The primary aim is to provide develop python programming skills,  utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
 * Look in to spatial representations: I want to try out h3index as a grid hierarchical spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
 * Combine data on property listings, points of interest and transportation to assist with location choice.
 * Explore retrieval augmented generation with foundation models to answer user queries on presented data.
