@@ -142,7 +142,7 @@ def main():
                 metric_title=f"Median sale price",
             )
         container.caption(
-            "Metrics above and historics sales price are based on map area displayed in window, and the bedroom and date filter selected."
+            "Metrics above and historic sales prices are based on map area displayed in window, and the bedroom and date filters selected."
         )
 
     with col_right:  # presenting sales history data

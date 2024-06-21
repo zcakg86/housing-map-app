@@ -8,7 +8,8 @@ import branca.colormap as cm
 from langchain.chat_models import ChatOpenAI
 import geopandas
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from functions import *
+import h3pandas
+
 #from langchain_community.llms import OpenAI
 #from langchain.agents.agent_types import AgentType
 #from langchain.output_parsers import ResponseSchema, StructuredOutputParser
@@ -16,7 +17,6 @@ from functions import *
 #from langchain.agents import AgentExecutor, Tool
 #from langchain.memory import ConversationBufferMemory
 
-#import h3pandas
 #import os
 #import math
 #import geopy
@@ -225,7 +225,7 @@ def display_sales_history(data, monthly_data):
                 "year_built": "built",
             }
         )
-        .reset_index()
+        .set_index('date')
         .head(20)
         .style.format({"price_per_sqft": "{:,.0f}", "price": "{:,.0f}"})
     )
