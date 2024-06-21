@@ -309,7 +309,7 @@ def display_map(
         )
         # Use custom icon
         icon = folium.features.CustomIcon(
-            "data/noun-baby-6828055.png", icon_size=(30, 30)
+            "data/noun-baby-cropped.png", icon_size=(30, 30)
         )
         # Set market at coordinates
         folium.Marker(
