@@ -12,15 +12,14 @@ The primary aim is to provide develop python programming skills, utilising cloud
 * Explore retrieval augmented generation with foundation models to answer user queries on presented data.
   
 ## Next Steps
-* Call listings and POI APIs directly in app (currently the data app uses stored data and is slow, and listings are out of date).
-* Add neigbourhood identifiers to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
 * Move data processing to pyspark (currently using pandas) to assist with computing speed.
-* Deploy app to URL on request.
+* Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
+* Add neigbourhood identifiers to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
 * Provide more complex temporal and spatial analysis utilising historical sales data.
 * Improve visualisation of relative prices.
 * Build functionality of AI chat.
 * Allow AI chat response to interact with map.
-* Improve overall presentation and formatting.
+* Improve overall presentation and formatting of app.
 
 ## Data
 Sales data: kingco_sales.csv\
@@ -34,6 +33,9 @@ https://rapidapi.com/s.mahmoud97/api/zillow56
 
 Point of interest data:
 Foursquare API
+
+Icon: from Noun Project\
+Firza Alamsyah
 
 ### To be used in further analysis:
 Income by Census Tract, 2000, 2006-2022 (American Community Survey 5 year period) American Community Survey.
