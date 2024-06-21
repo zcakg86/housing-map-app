@@ -35,46 +35,70 @@ def generate_response(input_text, dataframes, container):
     container.write(dataframe_agent.invoke(input_text, return_only_outputs=True)['output'])
 
 def display_bedroom_filter(data, container):
-    """Display bedroom based on data values, into specified container"""
+    """Display bedroom slider to filter data, into specified container"""
     beds_list = list(data['beds'].unique())
     beds_list.sort()
     beds_min = beds_list[0]
     beds_max = beds_list[len(beds_list)-1]
+    # create slider and return values for filters
     beds_min, beds_max = container.select_slider('Bedrooms', options=beds_list, value = (beds_min,beds_max))
     #st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
     return beds_min, beds_max
 
-def display_time_filters(data, date_column, start_date, container):
-    """Display date filter based on data values, into specified container. Start date should be in format 'YYYY-MM'"""
+def display_price_filter(data, variable_name, container):
+    """Display price slider, into specified container"""
+    min = data[variable_name].min()
+    lq = data[variable_name].quantile(0.25)
+    uq = data[variable_name].quantile(0.75)
+    max = data[variable_name].max()
+    # create slider and return values for filters
+    price_min, price_max = container.slider('Listing Price', min_value = int(round(min,-4)),
+                                            max_value = int(round(max,-4)),value=(int(lq),int(uq)), step = 20000)
+    #st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
+    return price_min, price_max
+
+def display_time_filter(data, date_column, container, default_start_date=''):
+    """Display date filter based on data values, into specified container.\
+        default_start_date should be in format 'YYYY-MM' if specified"""
     year_month_list = list(data[date_column].str[0:7].unique())
     # Sort list and return minimum and maximum date
     year_month_list.sort()
     min = year_month_list[0]
+    if default_start_date:
+        min = default_start_date
     max = year_month_list[len(year_month_list)-1]
-    min, max = container.select_slider('Monthly filter for sales history', options=year_month_list, value=(start_date, max))
+    # create slider and return values for filters
+    # value parameter specifies default positions 
+    min, max = container.select_slider('Monthly filter for sales history', options=year_month_list, value=(min, max))
     #st.header(f'Sale date filter: {min} to {max}')
     return min, max
 
-def prepare_sales_data(data, date_min, date_max, beds_min, beds_max):
-    """Filter sales data based on filters and perform column operations"""
-    if beds_min & beds_max:
+def filter_sales_data(data, date_min=None, date_max=None, beds_min=None, beds_max=None):
+    """Filter sales data based on filters"""
+    if beds_min and beds_max:
         data = data[data['beds'].between(int(beds_min),int(beds_max))]
-    if date_min & date_max:
+    if date_min and date_max:
         data['year_month']=data['sale_date'].str[0:7].str.replace('-', '').astype('int')
         data = data[data['year_month'].between(date_min, date_max)]
-    data.reset_index(inplace=True)
-    data['price_per_sqft']=data['sale_price']/data['sqft']
-    data = data.loc[:,['year_month','sale_date','sale_price', 'beds', 'sqft', 'price_per_sqft','bath_full', 'bath_half', 'bath_3qtr', 'year_built','lat','lng']]
-
     return data
 
-def filter_listings(data, bounding_box, beds_min, beds_max):
-    """Filter listings based on bedroom filter and map bounds"""
+def prepare_sales_data(data, cols_keep =['year_month','sale_date','sale_price', 'beds', 'sqft',\
+                       'price_per_sqft','bath_full', 'bath_half', 'bath_3qtr',\
+                        'year_built','lat','lng'] ):
+    data.reset_index(inplace=True)
+    data['price_per_sqft']=data['sale_price']/data['sqft']
+    data = data.loc[:,cols_keep]
+    return data
+
+def filter_listings(data, bounding_box='', beds_min='', beds_max='', price_min = None, price_max = None):
+    """Filter listings based on bedroom filter and/or map bounds"""
     if bounding_box:
         data = data[data['latitude'].between(bounding_box[0],bounding_box[2])]
         data = data[data['longitude'].between(bounding_box[1], bounding_box[3])]
-    if beds_min & beds_max:
+    if beds_min and beds_max:
         data = data[data['bedrooms'].between(int(beds_min),int(beds_max))]
+    if price_min and price_max:
+        data = data[data['price'].between(int(price_min),int(price_max))]
     return data
 
 def aggregate_sales(data, filtered_data):
@@ -131,55 +155,10 @@ def display_listings_aggregate(data, field_name, metric = 'count', metric_title 
     st.metric(metric_title,"{:,.0f}".format(total))
     
 def display_map(listings_data, aggregate_listing_data, places_data, places_name = 'places'):
-    """Declare map layers with color maps"""
-    # green to red, using lower and upper quartiles of listing prices
-    linear = cm.LinearColormap(["green", "yellow", "red"], vmin=listings_data.price.quantile(0.25),\
-                               vmax=listings_data.price.quantile(0.75))
-    
+    """Declare map layers"""
+
     # Set map centre as mean of coordinates, set default zoom
-    listings_map = folium.Map([listings_data.latitude.mean(), listings_data.longitude.mean()],zoom_start = 12)
-
-    # declare cluster for sales
-    marker_cluster = folium.plugins.MarkerCluster(disableClusteringAtZoom=14, name='Listings').add_to(listings_map)
-
-    # for each item of listings_data create frame with details, image and url
-    for i in range(0, len(listings_data)):
-        iframe = folium.IFrame('<style> body {font-family: Tahoma, sans-serif;}</style>' + \
-                               '${:,.0f}'.format(listings_data.iloc[i]['price']) + '<br>' + 'Beds: ' + \
-                               "{:.0f}".format(listings_data.iloc[i]['bedrooms']) + ' Baths: ' + \
-                               "{:.0f}".format(listings_data.iloc[i]['bathrooms']) + '<br>' + 'Living Area: ' + \
-                               "{:,.0f}".format(listings_data.iloc[i]['livingArea']) + '<br>$/SqFt: ' + \
-                               "{:.0f}".format(listings_data.iloc[i]['pricePerSqft']) + '<br><img src="' + \
-                               listings_data.iloc[i]['imgSrc'] + \
-                                '" alt="Property image" style="width:200px;height:200px;">' + \
-                                '<br>' + '<a ' + 'href="https://www.zillow.com/homedetails/' + str(
-                                int(listings_data.iloc[i]['zpid'])) + '_zpid' + '" target="_blank">See listing</a>', \
-                               width=250, height=300)
-        
-        # present above frames on click
-        popup = folium.Popup(iframe, min_width=250, max_width=250, min_height=320, max_height=400)
-
-        # also have tooltips on hover
-        tooltip = folium.Tooltip('<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:30px;color:black}</style>'+\
-                                 listings_data.iloc[i]['propertyType'].replace('_',' ').title()+'<br>'+\
-                                 '${:,.0f}'.format(listings_data.iloc[i]['price']) + '<br>' + 'Beds: ' + \
-                                 "{:.0f}".format(listings_data.iloc[i]['bedrooms']) + ' Baths: ' + \
-                                 "{:.0f}".format(listings_data.iloc[i]['bathrooms']) + '<br>' + 'Living Area: ' + \
-                                 "{:,.0f}".format(listings_data.iloc[i]['livingArea']) + '<br>$/SqFt: ' + \
-                                 "{:.0f}".format(listings_data.iloc[i]['pricePerSqft']))
-        
-        # Place above frame for each individual listing at property coordinates
-        folium.CircleMarker(
-            location=[listings_data.iloc[i]['latitude'], listings_data.iloc[i]['longitude']],
-            radius=5,
-            popup=popup,
-            tooltip = tooltip,
-            fill_color=linear(listings_data.iloc[i]['price']),
-            fill_opacity=1,
-            color=linear(listings_data.iloc[i]['price'])).add_to(marker_cluster)
-    
-    # add each point to cluster layer
-    listings_map.add_child(marker_cluster)
+    listings_map = folium.Map([listings_data.latitude.mean(), listings_data.longitude.mean()],zoom_start = 13)
 
     # declare colour map for h3 geometry colouring
     linear_sqft = cm.LinearColormap(["green", "yellow", "red"],
@@ -237,6 +216,52 @@ def display_map(listings_data, aggregate_listing_data, places_data, places_name 
         ).add_to(places)
 
     places.add_to(listings_map)
+
+    # Colour map for listing markers
+    # green to red, using lower and upper quartiles of listing prices
+    linear = cm.LinearColormap([(255, 223, 142),(198,88,36)], vmin=listings_data.price.quantile(0.25),\
+                               vmax=listings_data.price.quantile(0.75))
+    # declare cluster for sales
+    marker_cluster = folium.plugins.MarkerCluster(disableClusteringAtZoom=12, name='Listings').add_to(listings_map)
+
+    # for each item of listings_data create frame with details, image and url
+    for i in range(0, len(listings_data)):
+        iframe = folium.IFrame('<style> body {font-family: Tahoma, sans-serif;}</style>' + \
+                               '${:,.0f}'.format(listings_data.iloc[i]['price']) + '<br>' + 'Beds: ' + \
+                               "{:.0f}".format(listings_data.iloc[i]['bedrooms']) + ' Baths: ' + \
+                               "{:.0f}".format(listings_data.iloc[i]['bathrooms']) + '<br>' + 'Living Area: ' + \
+                               "{:,.0f}".format(listings_data.iloc[i]['livingArea']) + '<br>$/SqFt: ' + \
+                               "{:.0f}".format(listings_data.iloc[i]['pricePerSqft']) + '<br><img src="' + \
+                               listings_data.iloc[i]['imgSrc'] + \
+                                '" alt="Property image" style="width:200px;height:200px;">' + \
+                                '<br>' + '<a ' + 'href="https://www.zillow.com/homedetails/' + str(
+                                int(listings_data.iloc[i]['zpid'])) + '_zpid' + '" target="_blank">See listing</a>', \
+                               width=250, height=300)
+        
+        # present above frames on click
+        popup = folium.Popup(iframe, min_width=250, max_width=250, min_height=320, max_height=400)
+
+        # also have tooltips on hover
+        tooltip = folium.Tooltip('<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:30px;color:black}</style>'+\
+                                 listings_data.iloc[i]['propertyType'].replace('_',' ').title()+'<br>'+\
+                                 '${:,.0f}'.format(listings_data.iloc[i]['price']) + '<br>' + 'Beds: ' + \
+                                 "{:.0f}".format(listings_data.iloc[i]['bedrooms']) + ' Baths: ' + \
+                                 "{:.0f}".format(listings_data.iloc[i]['bathrooms']) + '<br>' + 'Living Area: ' + \
+                                 "{:,.0f}".format(listings_data.iloc[i]['livingArea']) + '<br>$/SqFt: ' + \
+                                 "{:.0f}".format(listings_data.iloc[i]['pricePerSqft']))
+        
+        # Place above frame for each individual listing at property coordinates
+        folium.CircleMarker(
+            location=[listings_data.iloc[i]['latitude'], listings_data.iloc[i]['longitude']],
+            radius=5,
+            popup=popup,
+            tooltip = tooltip,
+            fill_color=linear(listings_data.iloc[i]['price']),
+            fill_opacity=1,
+            color=linear(listings_data.iloc[i]['price'])).add_to(marker_cluster)
+    
+    # add each point to cluster layer
+    listings_map.add_child(marker_cluster)
     
     # add layer control option
     folium.LayerControl().add_to(listings_map)
