@@ -1,6 +1,6 @@
 # Housing Map App
 This project is an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market understanding.
-Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).\
+Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
 URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/ \
 
