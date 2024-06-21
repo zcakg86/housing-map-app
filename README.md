@@ -34,6 +34,9 @@ https://rapidapi.com/s.mahmoud97/api/zillow56
 Point of interest data:
 Foursquare API
 
+Icon: from Noun Project\
+Firza Alamsyah
+
 ### To be used in further analysis:
 Income by Census Tract, 2000, 2006-2022 (American Community Survey 5 year period) American Community Survey.
 (Income data used to be combined with changes in house prices - not to compare incomes of residents by neighbournhood).
