@@ -18,7 +18,7 @@ The primary aim is to provide develop python programming skills, utilising cloud
 * Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
 * Add neigbourhood identifiers to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
 * Provide more complex temporal and spatial analysis utilising historical sales data.
-* Improve visualisation of relative prices.
+* Improve visualisation of relative prices in map.
 * Build functionality of AI chat.
 * Allow AI chat response to interact with map.
 * Improve overall presentation and formatting of app.
