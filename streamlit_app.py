@@ -3,6 +3,11 @@ from functions import *
 APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
 
+#spark = SparkSession.builder \
+#    .config('spark.driver.host',"localhost") \
+#    .appName("housing_data") \
+#    .getOrCreate()
+
 def main():
     # Start declaring streamlit app content
     # Set page name
