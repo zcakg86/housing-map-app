@@ -152,6 +152,6 @@ def main():
         display_sales_history(data=sales_data, monthly_data=monthly_sales)
 
     end_time = time.time()
-    titles.caption("%s seconds to load" % (end_time - start_time))
+    titles.caption("%s seconds to load" % round(end_time - start_time,2))
 if __name__ == "__main__":
     main()
