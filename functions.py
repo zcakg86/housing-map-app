@@ -24,8 +24,16 @@ import time
 #from langchain_experimental.agents.agent_toolkits import create_csv_agent
 #from langchain.agents.initialize import initialize_agent
 
+@st.cache_data
+def load_data(file, add_h3=False, lat_col='',lng_col=''):
+    data = pd.read_csv(file)
+    if add_h3 == True:
+        data = data.h3.geo_to_h3(resolution=8, lat_col=lat_col, lng_col=lng_col)
+        data = data.h3.h3_to_geo_boundary().reset_index()
+    return data
 
-def generate_response(input_text, dataframes, container):
+@st.cache_data
+def generate_response(input_text, dataframes, _container):
     """ "Function to specify AI response and write response to container"""
     dataframe_agent = create_pandas_dataframe_agent(
         llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0125"),
@@ -36,10 +44,9 @@ def generate_response(input_text, dataframes, container):
         agent_type="openai-tools",
     )
 
-    container.write(
+    _container.write(
         dataframe_agent.invoke(input_text, return_only_outputs=True)["output"]
     )
-
 
 def display_bedroom_filter(data, container):
     """Display bedroom slider to filter data, into specified container"""
@@ -53,7 +60,6 @@ def display_bedroom_filter(data, container):
     )
     # st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
     return beds_min, beds_max
-
 
 def display_price_filter(data, variable_name, container):
     """Display price slider, into specified container"""
@@ -71,7 +77,6 @@ def display_price_filter(data, variable_name, container):
     )
     # st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
     return price_min, price_max
-
 
 def display_time_filter(data, date_column, container, default_start_date=""):
     """Display date filter based on data values, into specified container.\
@@ -91,7 +96,6 @@ def display_time_filter(data, date_column, container, default_start_date=""):
     # st.header(f'Sale date filter: {min} to {max}')
     return min, max
 
-
 def filter_sales_data(data, date_min=None, date_max=None, beds_min=None, beds_max=None):
     """Filter sales data based on filters"""
     if beds_min and beds_max:
@@ -102,7 +106,6 @@ def filter_sales_data(data, date_min=None, date_max=None, beds_min=None, beds_ma
         )
         data = data[data["year_month"].between(date_min, date_max)]
     return data
-
 
 def prepare_sales_data(
     data,
@@ -126,7 +129,6 @@ def prepare_sales_data(
     data = data.loc[:, cols_keep]
     return data
 
-
 def filter_listings(
     data, bounding_box="", beds_min="", beds_max="", price_min=None, price_max=None
 ):
@@ -139,7 +141,6 @@ def filter_listings(
     if price_min and price_max:
         data = data[data["price"].between(int(price_min), int(price_max))]
     return data
-
 
 def aggregate_sales(data, filtered_data):
     """Aggregates sales by month for chart. Uses unfiltered data (all areas) and filtered data (within map bounds)"""
@@ -161,7 +162,6 @@ def aggregate_sales(data, filtered_data):
     sales_monthly = pd.concat([filtered_sales_monthly, all_sales_monthly]).reset_index()
     return sales_monthly
 
-
 def aggregate_listings(data):
     """Aggregates listings by h3 geometry for map colours and small area statistics and output as GeoDataFrame"""
     ## Now create aggregates sales prices by H3index
@@ -174,7 +174,6 @@ def aggregate_listings(data):
     )
     return grouped_data
 
-
 def display_sales_aggregate(data, field_name, metric="count", metric_title="Total"):
     """Display summaries of property sales"""
     if metric == "count":
@@ -185,7 +184,7 @@ def display_sales_aggregate(data, field_name, metric="count", metric_title="Tota
         total = data[field_name].quantile(0.5)
     st.metric(metric_title, "{:,.0f}".format(total))
 
-
+@st.cache_data
 def display_sales_history(data, monthly_data):
     """ "Display historic sales chart and recent sales"""
     st.subheader("Historic sales prices")
@@ -231,7 +230,6 @@ def display_sales_history(data, monthly_data):
         .style.format({"price_per_sqft": "{:,.0f}", "price": "{:,.0f}"})
     )
 
-
 def display_listings_aggregate(data, field_name, metric="count", metric_title="Total"):
     """Display summary of listings"""
     if metric == "count":
@@ -241,7 +239,6 @@ def display_listings_aggregate(data, field_name, metric="count", metric_title="T
     if metric == "median":
         total = data[field_name].quantile(0.5)
     st.metric(metric_title, "{:,.0f}".format(total))
-
 
 def display_map(
     listings_data, aggregate_listing_data, places_data, places_name="places"

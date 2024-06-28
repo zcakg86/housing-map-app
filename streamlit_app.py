@@ -4,26 +4,22 @@ APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
 
 def main():
-    start_time = time.time()
-    # load data
-    sales_data = pd.read_csv("data/sales_2021_on_geo.csv")
-    sales_data = sales_data.h3.geo_to_h3(resolution=8, lat_col="lat", lng_col="lng")
-    sales_data = sales_data.h3.h3_to_geo_boundary().reset_index()
-
-    listings_data = pd.read_csv("data/all-listings.csv")
-    # remove listings more than 10,000,000
-    listings_data = listings_data[listings_data["price"] < 10000000]
-    listings_data = listings_data.h3.geo_to_h3(
-        resolution=8, lat_col="latitude", lng_col="longitude"
-    )
-    listings_data = listings_data.h3.h3_to_geo_boundary().reset_index()
-    grouped_listings = aggregate_listings(listings_data)
-
-    daycare_data = pd.read_csv("data/daycares.csv")
-
     # Start declaring streamlit app content
     # Set page name
     st.set_page_config(APP_TITLE, layout="wide")
+
+    # record set up time
+    start_time = time.time()
+
+    # load data
+    sales_data = load_data(file = "data/sales_2021_on_geo.csv", add_h3 = True, lat_col="lat", lng_col="lng")
+
+    listings_data = load_data(file = "data/all-listings.csv", add_h3 = True, lat_col="latitude", lng_col="longitude")
+    grouped_listings = aggregate_listings(listings_data)
+
+    daycare_data = load_data("data/daycares.csv")
+
+
 
     # Remove white space at top of page
     st.markdown(
@@ -66,7 +62,7 @@ def main():
                 ],
             ],
             #  dataframes = [daycare_data,listings_data.reset_index()],
-            container=chat,
+            _container=chat,
         )
 
     # Filter listings based on bedroom and price slider
