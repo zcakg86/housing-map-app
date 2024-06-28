@@ -4,7 +4,7 @@ APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
 
 def main():
-
+    start_time = time.time()
     # load data
     sales_data = pd.read_csv("data/sales_2021_on_geo.csv")
     sales_data = sales_data.h3.geo_to_h3(resolution=8, lat_col="lat", lng_col="lng")
@@ -151,6 +151,7 @@ def main():
         # display chart and table of recent sales
         display_sales_history(data=sales_data, monthly_data=monthly_sales)
 
-
+    end_time = time.time()
+    titles.caption("%s seconds to load" % (end_time - start_time))
 if __name__ == "__main__":
     main()

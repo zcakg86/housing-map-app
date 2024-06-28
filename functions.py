@@ -9,6 +9,7 @@ from langchain.chat_models import ChatOpenAI
 import geopandas
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 import h3pandas
+import time
 
 #from langchain_community.llms import OpenAI
 #from langchain.agents.agent_types import AgentType
