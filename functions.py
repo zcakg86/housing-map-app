@@ -11,7 +11,7 @@ from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe
 import h3pandas
 import time
 # New moving to pyspark
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession, functions as f
 import h3_pyspark
 from langchain_experimental.agents.agent_toolkits import create_spark_dataframe_agent
 
@@ -30,16 +30,16 @@ from langchain_experimental.agents.agent_toolkits import create_spark_dataframe_
 #from langchain.agents.initialize import initialize_agent
 
 @st.cache_data
-def load_data(file, add_h3=False, spark = False, lat_col='',lng_col=''):
-    if spark == False:
+def load_data(file, _spark: SparkSession ='', add_h3=False, use_spark = False, lat_col='',lng_col=''):
+    if use_spark == False:
         data = pd.read_csv(file)
         if add_h3 == True :
             data = data.h3.geo_to_h3(resolution=8, lat_col=lat_col, lng_col=lng_col)
             data = data.h3.h3_to_geo_boundary().reset_index()
     else:
-        data = spark.read.csv(file, header=True, inferSchema=True)
+        data = _spark.read.csv(file, header=True, inferSchema=True) # type: ignore
         if add_h3 == True:
-            data = data.withColumn('h3_8', h3_pyspark.geo_to_h3(lat_col,lng_col,8))
+            data = data.withColumn('h3_8', h3_pyspark.geo_to_h3(lat_col,lng_col,f.lit(8)))
     return data
 
 @st.cache_data
