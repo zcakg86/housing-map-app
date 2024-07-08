@@ -16,3 +16,4 @@ tabulate
 plotly_express
 pyspark
 h3_pyspark
+shapely
