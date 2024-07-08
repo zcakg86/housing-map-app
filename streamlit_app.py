@@ -3,10 +3,10 @@ from functions import *
 APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
 
-#spark = SparkSession.builder \
-#    .config('spark.driver.host',"localhost") \
-#    .appName("housing_data") \
-#    .getOrCreate()
+spark = SparkSession.builder \
+    .config('spark.driver.host',"localhost") \
+    .appName("housing_data") \
+    .getOrCreate()
 
 def main():
     # Start declaring streamlit app content
@@ -17,12 +17,12 @@ def main():
     start_time = time.time()
 
     # load data
-    sales_data = load_data(file = "data/sales_2021_on_geo.csv", add_h3 = True, lat_col="lat", lng_col="lng")
+    sales_data = load_data(file = "data/sales_2021_on_geo.csv", _spark = spark, use_spark = True, add_h3 = True, lat_col="lat", lng_col="lng")
 
-    listings_data = load_data(file = "data/all-listings.csv", add_h3 = True, lat_col="latitude", lng_col="longitude")
+    listings_data = load_data(file = "data/all-listings.csv", _spark = spark, use_spark = True, add_h3 = True, lat_col="latitude", lng_col="longitude")
     grouped_listings = aggregate_listings(listings_data)
 
-    daycare_data = load_data("data/daycares.csv")
+    daycare_data = load_data("data/daycares.csv", _spark = spark, use_spark = True)
 
 
 
@@ -55,17 +55,14 @@ def main():
         chat.write(f"User has sent the following prompt: {location_chat}")
         generate_response(
             location_chat,
-            dataframes=[
-                daycare_data.rename(
-                    columns={
-                        "geocodes.main.latitude": "latitude",
-                        "geocodes.main.longitude": "longitude",
-                    }
-                ).loc[:, ["name", "latitude", "longitude"]],
-                listings_data.loc[
-                    :, ["price", "latitude", "longitude", "propertyType", "bedrooms"]
+            _dataframes=[
+                daycare_data.withColumnRenamed("geocodes.main.latitude","latitude") \
+                .withColumnRenamed("geocodes.main.longitude", "longitude")
+                .select('name','latitude','longitude')
+                .toPandas(),
+                listings_data.select("price", "latitude", "longitude", "propertyType", "bedrooms")
+                .toPandas()
                 ],
-            ],
             #  dataframes = [daycare_data,listings_data.reset_index()],
             _container=chat,
         )
@@ -97,20 +94,29 @@ def main():
             listings_data=listings_data,
             aggregate_listing_data=grouped_listings,
             places_data=daycare_data,
-            places_name="Day cares",
+            places_name="Day cares"
         )
+        #bounding_box=[47.59701344779626, -122.33464583370677,47.622872149950474, -122.31649393412057]
+        #
+        #test = grouped_listings.withColumn("properties",
+        #                                   F.to_json(F.struct("pricePerSqft","h3_8","count")))
+        #test = test.withColumn('type',F.lit('Feature'))
+        #test = test.select("properties","type","geometry")
+        #test = test.toJSON().first()
+        #test = '''{
+        #"type": "FeatureCollection",
+        #"features": ['''+test+''']}'''
+        #container.write(test)
         # filter listings based on map bounds for listing metrics
         listings = filter_listings(data=listings_data, bounding_box=bounding_box)
         # filter sales based on map bounds and bedroom/date filter
         # filter data with bounding_box and dates/beds
         sales_data = prepare_sales_data(sales_data)
         # filter for 'This area' in sale price chart, and recent sales
-        filtered_sales = sales_data[
-            sales_data["lat"].between(bounding_box[0], bounding_box[2])
-        ]
-        filtered_sales = sales_data[
-            sales_data["lng"].between(bounding_box[1], bounding_box[3])
-        ]
+        filtered_sales = sales_data.filter(
+            (sales_data['lat'].between(bounding_box[0], bounding_box[2])) &
+            (sales_data['lng'].between(bounding_box[1], bounding_box[3]))
+        )
 
         col1, col2, col3, col4 = container.columns(4)
         # Place listing metrics
@@ -154,5 +160,6 @@ def main():
 
     end_time = time.time()
     titles.caption("%s seconds to load" % round(end_time - start_time,2))
+
 if __name__ == "__main__":
     main()
