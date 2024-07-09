@@ -15,6 +15,7 @@ from pyspark.sql import SparkSession, functions as F
 import h3_pyspark
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from shapely.geometry import Polygon, shape
+import json
 
 #from langchain_community.llms import OpenAI
 #from langchain.agents.agent_types import AgentType
@@ -199,8 +200,7 @@ def aggregate_sales(data, filtered_data):
     return sales_monthly
 
 def aggregate_listings(data):
-    """Aggregates listings by h3 geometry for map colors and small area statistics"""
-    import json
+    """Aggregates listings by h3 geometry for map colors and small area statistics. Adds geometry and properties column, ready to convert to geojson"""
     # Filter data where pricePerSqft is not null
     data_filtered = data.filter(F.col("pricePerSqft").isNotNull()) \
                     .filter(F.col("h3_8").isNotNull())
@@ -211,7 +211,9 @@ def aggregate_listings(data):
                                     F.count("zpid").alias("count")) \
                                 .withColumn('geometry',
                                             h3_pyspark.h3_to_geo_boundary(F.col('h3_8'),
-                                                                          F.lit(True))) 
+                                                                          F.lit(True))) \
+                                .withColumn("properties",
+                                            F.to_json(F.struct("pricePerSqft","h3_8","count")))
     return grouped_data
 
 def display_sales_aggregate(data, field_name, metric="count", metric_title="Total"):
@@ -284,6 +286,23 @@ def display_listings_aggregate(data, field_name, metric="count", metric_title="T
 
     st.metric(metric_title, "{:,.0f}".format(total))
 
+def construct_geojson(data, spark_df=True):  
+    """Requires dataframe containing fields geometry and properties, as strings representing dict objects"""
+    geojson = {
+    "type": "FeatureCollection",
+    "features": []
+    }
+    if spark_df == True:
+        data = data.collect()
+    for row in data:
+        feature = {
+          "type": "Feature",
+          "geometry": json.loads(row['geometry']),
+          "properties":json.loads(row['properties'])
+          }
+        geojson["features"].append(feature)
+    return geojson
+
 def display_map(
     listings_data, aggregate_listing_data, places_data, places_name="places"
 ):
@@ -302,43 +321,31 @@ def display_map(
     )
 
     # include aggregate statistics for geometry in tooltip
-    tooltip = folium.GeoJsonTooltip(
-        fields=["pricePerSqft", "count"],
-        aliases=["Price per Sq Ft (USD): ", "Number of Listings: "],
-        localize=True,
-        sticky=False,
-        labels=True,
-        style="""
-            background-color: #F0EFEF;
-            border: 2px solid black;
-            border-radius: 3px;
-            box-shadow: 3px;
-        """,
-        max_width=200,
-    )
+    #tooltip = folium.GeoJsonTooltip(
+    #    fields=["pricePerSqft", "count"],
+    #    aliases=["Price per Sq Ft (USD): ", "Number of Listings: "],
+    #    localize=True,
+    #    sticky=False,
+    #    labels=True,
+    #    style="""
+    #        background-color: #F0EFEF;
+    #        border: 2px solid black;
+    #        border-radius: 3px;
+    #        box-shadow: 3px;
+    #    """,
+    #    max_width=200,
+    #)
 
-    test = aggregate_listing_data.withColumn("properties",
-                                               F.to_json(F.struct("pricePerSqft","h3_8","count")))
-    test = test.withColumn('type',F.lit('Feature'))
-    test = test.withColumn("features",
-                                               F.to_json(F.struct("properties","type","geometry")))
-    test = test.select("features")
-    test = test.toJSON().first()
-    test = '''{
-    "type": "FeatureCollection",
-    "features": ['''+test+''']}'''
-
-    # needs keys?
-    # add geojson layer of colours of price per sqft by h3 geometry
+    geojson = construct_geojson(aggregate_listing_data)
 
     geo_j = folium.GeoJson(
-        data=test,
-        tooltip=tooltip,
+        data=geojson["features"][0],
+        #tooltip=tooltip,
         name="Area average prices",
         style_function=lambda feature: {
             "fillOpacity": 0.2,
             #"fillColor": linear_sqft(feature['properties']["pricePerSqft"]),
-            "weight": 0,
+            "weight": 1,
         },
     )
 

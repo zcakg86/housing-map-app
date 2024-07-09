@@ -98,15 +98,7 @@ def main():
         )
         #bounding_box=[47.59701344779626, -122.33464583370677,47.622872149950474, -122.31649393412057]
         #
-        #test = grouped_listings.withColumn("properties",
-        #                                   F.to_json(F.struct("pricePerSqft","h3_8","count")))
-        #test = test.withColumn('type',F.lit('Feature'))
-        #test = test.select("properties","type","geometry")
-        #test = test.toJSON().first()
-        #test = '''{
-        #"type": "FeatureCollection",
-        #"features": ['''+test+''']}'''
-        #container.write(test)
+
         # filter listings based on map bounds for listing metrics
         listings = filter_listings(data=listings_data, bounding_box=bounding_box)
         # filter sales based on map bounds and bedroom/date filter
