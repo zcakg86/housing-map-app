@@ -50,7 +50,7 @@ def generate_response(input_text, _dataframes, _container):
     dataframe_agent = create_pandas_dataframe_agent(
         llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0125"),
         df=_dataframes,
-        prefix = 'df1 is listing data containing properties for sale, df2 is place data. If the user says "near" assume they mean within 2 miles. If the response provides items with locations, return the coordinates of each returned location as a list of coordinates in form [Longitude, Latitude] in square brackets at the end of the response',
+        prefix = 'df1 is listing data containing properties for sale, df2 is place data. If the user says "near" assume they mean within 2 miles. If the response provides items or an item with coordinates, return the coordinates of each returned location as a single pair or list of coordinates in the form [Longitude, Latitude] in square brackets at the end of the response',
         allow_dangerous_code=True,
         verbose=True,
         handle_parsing_errors=True,
@@ -337,7 +337,7 @@ def display_map(
     if coordinates:
         st.caption(coordinates)
         listings_map = folium.Map(
-        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
+        [coordinates[0]['lat'],coordinates[0]['lng']], zoom_start=14   
     )
     # Set map centre as mean of coordinates, set default zoom
     listings_map = folium.Map(
