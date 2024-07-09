@@ -107,11 +107,14 @@ def main():
         # filter sales based on map bounds and bedroom/date filter
         # filter data with bounding_box and dates/beds
         sales_data = prepare_sales_data(sales_data)
+        if bounding_box:
         # filter for 'This area' in sale price chart, and recent sales
-        filtered_sales = sales_data.filter(
-            (sales_data['lat'].between(bounding_box[0], bounding_box[2])) &
-            (sales_data['lng'].between(bounding_box[1], bounding_box[3]))
+            filtered_sales = sales_data.filter(
+                (sales_data['lat'].between(bounding_box[0], bounding_box[2])) &
+                (sales_data['lng'].between(bounding_box[1], bounding_box[3]))
         )
+        else: 
+            filtered_sales = sales_data
 
         col1, col2, col3, col4 = container.columns(4)
         # Place listing metrics
@@ -151,7 +154,7 @@ def main():
         # aggregate by month for displaying chart
         monthly_sales = aggregate_sales(data=sales_data, filtered_data=filtered_sales)
         # display chart and table of recent sales
-        display_sales_history(data=sales_data, monthly_data=monthly_sales)
+        display_sales_history(data=filtered_sales, monthly_data=monthly_sales)
 
     end_time = time.time()
     titles.caption("%s seconds to load" % round(end_time - start_time,2))

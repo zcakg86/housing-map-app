@@ -329,26 +329,15 @@ def construct_geojson(data, spark_df=True):
     
     return json.dumps(geojson)
 
-def display_map(
-    listings_data, aggregate_listing_data, places_data, coordinates, places_name="places"
-):
-    """Declare map layers"""
-    geojson = construct_geojson(aggregate_listing_data)
-    if coordinates:
-        st.caption(coordinates)
-        listings_map = folium.Map(
-        [coordinates[0]['lat'],coordinates[0]['lng']], zoom_start=14   
-    )
-    # Set map centre as mean of coordinates, set default zoom
-    listings_map = folium.Map(
-        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
-    )
+def add_aggregate_layer(data, map):
+    geojson = construct_geojson(data)
+
     #[geojson["features"][0]['geometry']['coordinates'][0][1],geojson["features"][0]['geometry']['coordinates'][0][0]],zoom_start = 14
     # declare colour map for h3 geometry colouring
     linear_sqft = cm.LinearColormap(
         ["green", "yellow", "red"],
-        vmin=aggregate_listing_data.approxQuantile("pricePerSqft", [0.25], 0.001)[0],
-        vmax=aggregate_listing_data.approxQuantile("pricePerSqft", [0.75], 0.001)[0],
+        vmin=data.approxQuantile("pricePerSqft", [0.25], 0.001)[0],
+        vmax=data.approxQuantile("pricePerSqft", [0.75], 0.001)[0],
     )
 
     # include aggregate statistics for geometry in tooltip
@@ -378,12 +367,13 @@ def display_map(
         },
     )
 
-    geo_j.add_to(listings_map)
+    geo_j.add_to(map)
 
-    # Add layer for points of interest data
-    places = folium.FeatureGroup(name=places_name, control=True).add_to(listings_map)
+def add_places_data(data, map, layer_name='Places'):
+    ''' Define layer for points of interest data '''
+    places = folium.FeatureGroup(name=layer_name, control=True)
     
-    places_data = places_data.toPandas()
+    places_data = data.toPandas()
     
     # for each item create pop up and use custom icon
     for i in range(0, len(places_data)):
@@ -416,12 +406,13 @@ def display_map(
             icon=icon,
         ).add_to(places)
     
-    places.add_to(listings_map)
-    
+    places.add_to(map)
+
+
+def add_listings_data(data, map):
+    listings_data = data.toPandas()
     # Colour map for listing markers
     # green to red, using lower and upper quartiles of listing prices
-    
-    listings_data = listings_data.toPandas()
     linear = cm.LinearColormap(
         [(255, 223, 142), (198, 88, 36)],
         vmin=listings_data.price.quantile(0.25),
@@ -430,7 +421,7 @@ def display_map(
     # declare cluster for sales
     marker_cluster = folium.plugins.MarkerCluster(
         disableClusteringAtZoom=12, name="Listings"
-    ).add_to(listings_map)
+    ).add_to(map)
     
     # for each item of listings_data create frame with details, image and url
     for i in range(0, len(listings_data)):
@@ -497,23 +488,44 @@ def display_map(
             color=linear(listings_data.iloc[i]["price"]),
         ).add_to(marker_cluster)
     
-    # add each point to cluster layer
-    listings_map.add_child(marker_cluster)
-    
+    # add cluster layer to map
+    map.add_child(marker_cluster)
+
+def display_map(
+    listings_data, aggregate_listing_data, places_data, coordinates, places_name="places"
+):
+    """Function to set up map, add layers, and run in streamlit"""
+    if coordinates:
+        st.caption(coordinates)
+        listings_map = folium.Map(
+        [coordinates[0]['lat'],coordinates[0]['lng']], zoom_start=14   
+    )
+    # Set map centre as mean of coordinates, set default zoom
+    listings_map = folium.Map(
+        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
+    )
+
+    # Add each Layer
+    add_aggregate_layer(data = aggregate_listing_data, map = listings_map)
+    add_places_data(data = places_data, map = listings_map, layer_name = places_name)
+    add_listings_data(data = listings_data, map = listings_map)
+        
     ## add layer control option
     folium.LayerControl().add_to(listings_map)
-    #
-    ## Create map with st_folium
+    
+    # Create map with st_folium
     st_map = st_folium(listings_map, use_container_width=True, height=600)
     #
     ## not used:  functionality to respond to for click of h3geometry
     ## h3_08_name = ''
     ### if st_map['last_active_drawing']:
     ####    h3_08_name = st_map['last_active_drawing']['properties']['h3_08']
-    #
+
     # Create bounding box from map boumds
     bounding_box = ""
-    if st_map["bounds"]:  # map should have bounds, to use in filter
+    # there is always bounds, need to reset on click
+    if st.button('Reset to map bound'):
+    #if st_map["bounds"]:  # map should have bounds, to use in filter
         bounding_box = [
                 st_map["bounds"]["_southWest"]["lat"],
                 st_map["bounds"]["_southWest"]["lng"],
@@ -521,7 +533,7 @@ def display_map(
                 st_map["bounds"]["_northEast"]["lng"],
             ]
 # return map bounds
-    return bounding_box  ##, h3_08_name
+        return bounding_box  ##, h3_08_name
 
 # later implement response schemas and specify tools for generate_response function
 # response_schemas = [
