@@ -16,6 +16,7 @@ import h3_pyspark
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from shapely.geometry import Polygon, shape
 import json
+import re
 
 #from langchain_community.llms import OpenAI
 #from langchain.agents.agent_types import AgentType
@@ -49,16 +50,37 @@ def generate_response(input_text, _dataframes, _container):
     dataframe_agent = create_pandas_dataframe_agent(
         llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0125"),
         df=_dataframes,
-        prefix = 'df1 is listing data containing properties for sale, df2 is daycare data. Respond about properties with locations with the coordinates at the end in square brackets',
+        prefix = 'df1 is listing data containing properties for sale, df2 is place data. If the user says "near" assume they mean within 2 miles. If the response provides items with locations, return the coordinates of each returned location as a list of coordinates in form [Longitude, Latitude] in square brackets at the end of the response',
         allow_dangerous_code=True,
         verbose=True,
         handle_parsing_errors=True,
         agent_type="openai-tools",
     )
 
-    _container.write(
-        dataframe_agent.invoke(input_text, return_only_outputs=True)["output"]
-    )
+    response = dataframe_agent.invoke(input_text, return_only_outputs=False)['output']
+    _container.write(response)
+    # Find all coordinates in form [lat, long]
+    coordinates =  re.findall('\\[(\\d+, \\d+)\\]', response, re.IGNORECASE)
+    if coordinates:
+        _container.write(coordinates)
+        return coordinates
+
+def coords_to_dict(coord_list):
+  '''Function to create a list of dictionaries containing coordinates with keys 'lat' and 'lng'.
+  Expects input as list of strings in formart [lat, lng]'''
+  dict_new = [] 
+  for item in range(0,len(coord_list)):
+    dict_new.append({})
+    for c in ['lat','lng']:
+      for i in enumerate(coord_list[item].split(', ')):
+        if c == 'lat' and i[0] == 0:
+          print(i[1])
+          print(item)
+          dict_new[item]['lat'] = float(i[1])
+        if c == 'lng' and i[0] == 1:
+          dict_new[item]['lng'] = float(i[1])
+  return(dict_new)
+
 
 def display_bedroom_filter(data, container):
     """Display bedroom slider to filter data, into specified container"""
@@ -201,7 +223,7 @@ def aggregate_sales(data, filtered_data):
 
 def aggregate_listings(data):
     """Aggregates listings by h3 geometry for map colors and small area statistics. Adds geometry and properties column, ready to convert to geojson"""
-    # Filter data where pricePerSqft is not null
+    # Filter data where pricePerSqft and h3_8 is not null
     data_filtered = data.filter(F.col("pricePerSqft").isNotNull()) \
                     .filter(F.col("h3_8").isNotNull())
     # Group by H3 index and calculate median pricePerSqft and count
@@ -210,10 +232,10 @@ def aggregate_listings(data):
                                     F.expr('percentile_approx(pricePerSqft, 0.5)').alias('pricePerSqft'),
                                     F.count("zpid").alias("count")) \
                                 .withColumn('geometry',
-                                            h3_pyspark.h3_to_geo_boundary(F.col('h3_8'),
-                                                                          F.lit(True))) \
+                                            h3_pyspark.h3_to_geo_boundary(F.col('h3_8'),F.lit(True))) \
                                 .withColumn("properties",
                                             F.to_json(F.struct("pricePerSqft","h3_8","count")))
+
     return grouped_data
 
 def display_sales_aggregate(data, field_name, metric="count", metric_title="Total"):
@@ -297,22 +319,31 @@ def construct_geojson(data, spark_df=True):
     for row in data:
         feature = {
           "type": "Feature",
-          "geometry": json.loads(row['geometry']),
-          "properties":json.loads(row['properties'])
+          "geometry": { "type" : "Polygon",
+                       "coordinates" : [
+                           json.loads(row['geometry'])['coordinates']
+                           ] },
+          "properties": json.loads(row['properties']) 
           }
         geojson["features"].append(feature)
-    return geojson
+    
+    return json.dumps(geojson)
 
 def display_map(
-    listings_data, aggregate_listing_data, places_data, places_name="places"
+    listings_data, aggregate_listing_data, places_data, coordinates, places_name="places"
 ):
     """Declare map layers"""
-
+    geojson = construct_geojson(aggregate_listing_data)
+    if coordinates:
+        st.caption(coordinates)
+        listings_map = folium.Map(
+        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
+    )
     # Set map centre as mean of coordinates, set default zoom
     listings_map = folium.Map(
-        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14
+        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
     )
-
+    #[geojson["features"][0]['geometry']['coordinates'][0][1],geojson["features"][0]['geometry']['coordinates'][0][0]],zoom_start = 14
     # declare colour map for h3 geometry colouring
     linear_sqft = cm.LinearColormap(
         ["green", "yellow", "red"],
@@ -321,30 +352,28 @@ def display_map(
     )
 
     # include aggregate statistics for geometry in tooltip
-    #tooltip = folium.GeoJsonTooltip(
-    #    fields=["pricePerSqft", "count"],
-    #    aliases=["Price per Sq Ft (USD): ", "Number of Listings: "],
-    #    localize=True,
-    #    sticky=False,
-    #    labels=True,
-    #    style="""
-    #        background-color: #F0EFEF;
-    #        border: 2px solid black;
-    #        border-radius: 3px;
-    #        box-shadow: 3px;
-    #    """,
-    #    max_width=200,
-    #)
-
-    geojson = construct_geojson(aggregate_listing_data)
+    tooltip = folium.GeoJsonTooltip(
+        fields=["pricePerSqft", "count"],
+        aliases=["Price per Sq Ft (USD): ", "Number of Listings: "],
+        localize=True,
+        sticky=False,
+        labels=True,
+        style="""
+            background-color: #F0EFEF;
+            border: 2px solid black;
+            border-radius: 3px;
+            box-shadow: 3px;
+        """,
+        max_width=200,
+    )
 
     geo_j = folium.GeoJson(
-        data=geojson["features"][0],
-        #tooltip=tooltip,
+        data=geojson,
+        tooltip=tooltip,
         name="Area average prices",
         style_function=lambda feature: {
             "fillOpacity": 0.2,
-            #"fillColor": linear_sqft(feature['properties']["pricePerSqft"]),
+            "fillColor": linear_sqft(feature['properties']["pricePerSqft"]),
             "weight": 1,
         },
     )
@@ -352,127 +381,127 @@ def display_map(
     geo_j.add_to(listings_map)
 
     # Add layer for points of interest data
-    #   places = folium.FeatureGroup(name=places_name, control=True).add_to(listings_map)
-    #
-    #places_data = places_data.toPandas()
-    #
-    ## for each item create pop up and use custom icon
-    #for i in range(0, len(places_data)):
-    #    # frame which shows address of point
-    #    iframe = folium.IFrame(
-    #        "<style> body {font-family: Tahoma, sans-serif;font-size:10px}</style>"
-    #        + "<b>"
-    #        + places_data.iloc[i]["name"]
-    #        + "</b><br>"
-    #        + places_data.iloc[i]["location.formatted_address"]
-    #    )
-    #    popup = folium.Popup(iframe, min_width=150, max_width=150, max_height=70)
-    #    # Tooltip gives only name
-    #    tooltip = folium.Tooltip(
-    #        "<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:20px;color:black}</style>"
-    #        + places_data.iloc[i]["name"]
-    #    )
-    #    # Use custom icon
-    #    icon = folium.features.CustomIcon(
-    #        "data/noun-baby-cropped.png", icon_size=(30, 30)
-    #    )
-    #    # Set market at coordinates
-    #    folium.Marker(
-    #        location=[
-    #            places_data.iloc[i]["geocodes.main.latitude"],
-    #            places_data.iloc[i]["geocodes.main.longitude"],
-    #        ],
-    #        popup=popup,
-    #        tooltip=tooltip,
-    #        icon=icon,
-    #    ).add_to(places)
-    #
-    #places.add_to(listings_map)
-    #
-    ## Colour map for listing markers
-    ## green to red, using lower and upper quartiles of listing prices
-    #
-    #listings_data = listings_data.toPandas()
-    #linear = cm.LinearColormap(
-    #    [(255, 223, 142), (198, 88, 36)],
-    #    vmin=listings_data.price.quantile(0.25),
-    #    vmax=listings_data.price.quantile(0.75),
-    #)
-    ## declare cluster for sales
-    #marker_cluster = folium.plugins.MarkerCluster(
-    #    disableClusteringAtZoom=12, name="Listings"
-    #).add_to(listings_map)
-    #
-    ## for each item of listings_data create frame with details, image and url
-    #for i in range(0, len(listings_data)):
-    #    iframe = folium.IFrame(
-    #        "<style> body {font-family: Tahoma, sans-serif;}</style>"
-    #        + "${:,.0f}".format(listings_data.iloc[i]["price"])
-    #        + "<br>"
-    #        + "Beds: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["bedrooms"])
-    #        + " Baths: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["bathrooms"])
-    #        + "<br>"
-    #        + "Living Area: "
-    #        + "{:,.0f}".format(listings_data.iloc[i]["livingArea"])
-    #        + "<br>$/SqFt: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["pricePerSqft"])
-    #        + '<br><img src="'
-    #        + listings_data.iloc[i]["imgSrc"]
-    #        + '" alt="Property image" style="width:200px;height:200px;">'
-    #        + "<br>"
-    #        + "<a "
-    #        + 'href="https://www.zillow.com/homedetails/'
-    #        + str(int(listings_data.iloc[i]["zpid"]))
-    #        + "_zpid"
-    #        + '" target="_blank">See listing</a>',
-    #        width=250,
-    #        height=300,
-    #    )
-    #
-    #    # present above frames on click
-    #    popup = folium.Popup(
-    #        iframe, min_width=250, max_width=250, min_height=320, max_height=400
-    #    )
-    #
-    #    # also have tooltips on hover
-    #    tooltip = folium.Tooltip(
-    #        "<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:30px;color:black}</style>"
-    #        + listings_data.iloc[i]["propertyType"].replace("_", " ").title()
-    #        + "<br>"
-    #        + "${:,.0f}".format(listings_data.iloc[i]["price"])
-    #        + "<br>"
-    #        + "Beds: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["bedrooms"])
-    #        + " Baths: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["bathrooms"])
-    #        + "<br>"
-    #        + "Living Area: "
-    #        + "{:,.0f}".format(listings_data.iloc[i]["livingArea"])
-    #        + "<br>$/SqFt: "
-    #        + "{:.0f}".format(listings_data.iloc[i]["pricePerSqft"])
-    #    )
-    #
-    #    # Place above frame for each individual listing at property coordinates
-    #    folium.CircleMarker(
-    #        location=[
-    #            listings_data.iloc[i]["latitude"],
-    #            listings_data.iloc[i]["longitude"],
-    #        ],
-    #        radius=5,
-    #        popup=popup,
-    #        tooltip=tooltip,
-    #        fill_color=linear(listings_data.iloc[i]["price"]),
-    #        fill_opacity=1,
-    #        color=linear(listings_data.iloc[i]["price"]),
-    #    ).add_to(marker_cluster)
-    #
-    ## add each point to cluster layer
-    #listings_map.add_child(marker_cluster)
-    #
+    places = folium.FeatureGroup(name=places_name, control=True).add_to(listings_map)
+    
+    places_data = places_data.toPandas()
+    
+    # for each item create pop up and use custom icon
+    for i in range(0, len(places_data)):
+        # frame which shows address of point
+        iframe = folium.IFrame(
+            "<style> body {font-family: Tahoma, sans-serif;font-size:10px}</style>"
+            + "<b>"
+            + places_data.iloc[i]["name"]
+            + "</b><br>"
+            + places_data.iloc[i]["location.formatted_address"]
+        )
+        popup = folium.Popup(iframe, min_width=150, max_width=150, max_height=70)
+        # Tooltip gives only name
+        tooltip = folium.Tooltip(
+            "<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:20px;color:black}</style>"
+            + places_data.iloc[i]["name"]
+        )
+        # Use custom icon
+        icon = folium.features.CustomIcon(
+            "data/noun-baby-cropped.png", icon_size=(30, 30)
+        )
+        # Set market at coordinates
+        folium.Marker(
+            location=[
+                places_data.iloc[i]["geocodes.main.latitude"],
+                places_data.iloc[i]["geocodes.main.longitude"],
+            ],
+            popup=popup,
+            tooltip=tooltip,
+            icon=icon,
+        ).add_to(places)
+    
+    places.add_to(listings_map)
+    
+    # Colour map for listing markers
+    # green to red, using lower and upper quartiles of listing prices
+    
+    listings_data = listings_data.toPandas()
+    linear = cm.LinearColormap(
+        [(255, 223, 142), (198, 88, 36)],
+        vmin=listings_data.price.quantile(0.25),
+        vmax=listings_data.price.quantile(0.75),
+    )
+    # declare cluster for sales
+    marker_cluster = folium.plugins.MarkerCluster(
+        disableClusteringAtZoom=12, name="Listings"
+    ).add_to(listings_map)
+    
+    # for each item of listings_data create frame with details, image and url
+    for i in range(0, len(listings_data)):
+        iframe = folium.IFrame(
+            "<style> body {font-family: Tahoma, sans-serif;}</style>"
+            + "${:,.0f}".format(listings_data.iloc[i]["price"])
+            + "<br>"
+            + "Beds: "
+            + "{:.0f}".format(listings_data.iloc[i]["bedrooms"])
+            + " Baths: "
+            + "{:.0f}".format(listings_data.iloc[i]["bathrooms"])
+            + "<br>"
+            + "Living Area: "
+            + "{:,.0f}".format(listings_data.iloc[i]["livingArea"])
+            + "<br>$/SqFt: "
+            + "{:.0f}".format(listings_data.iloc[i]["pricePerSqft"])
+            + '<br><img src="'
+            + listings_data.iloc[i]["imgSrc"]
+            + '" alt="Property image" style="width:200px;height:200px;">'
+            + "<br>"
+            + "<a "
+            + 'href="https://www.zillow.com/homedetails/'
+            + str(int(listings_data.iloc[i]["zpid"]))
+            + "_zpid"
+            + '" target="_blank">See listing</a>',
+            width=250,
+            height=300,
+        )
+    
+        # present above frames on click
+        popup = folium.Popup(
+            iframe, min_width=250, max_width=250, min_height=320, max_height=400
+        )
+    
+        # also have tooltips on hover
+        tooltip = folium.Tooltip(
+            "<style> body {font-family: Tahoma, sans-serif;font-weight:bold;font-size:30px;color:black}</style>"
+            + listings_data.iloc[i]["propertyType"].replace("_", " ").title()
+            + "<br>"
+            + "${:,.0f}".format(listings_data.iloc[i]["price"])
+            + "<br>"
+            + "Beds: "
+            + "{:.0f}".format(listings_data.iloc[i]["bedrooms"])
+            + " Baths: "
+            + "{:.0f}".format(listings_data.iloc[i]["bathrooms"])
+            + "<br>"
+            + "Living Area: "
+            + "{:,.0f}".format(listings_data.iloc[i]["livingArea"])
+            + "<br>$/SqFt: "
+            + "{:.0f}".format(listings_data.iloc[i]["pricePerSqft"])
+        )
+    
+        # Place above frame for each individual listing at property coordinates
+        folium.CircleMarker(
+            location=[
+                listings_data.iloc[i]["latitude"],
+                listings_data.iloc[i]["longitude"],
+            ],
+            radius=5,
+            popup=popup,
+            tooltip=tooltip,
+            fill_color=linear(listings_data.iloc[i]["price"]),
+            fill_opacity=1,
+            color=linear(listings_data.iloc[i]["price"]),
+        ).add_to(marker_cluster)
+    
+    # add each point to cluster layer
+    listings_map.add_child(marker_cluster)
+    
     ## add layer control option
-    #folium.LayerControl().add_to(listings_map)
+    folium.LayerControl().add_to(listings_map)
     #
     ## Create map with st_folium
     st_map = st_folium(listings_map, use_container_width=True, height=600)

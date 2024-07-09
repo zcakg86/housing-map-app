@@ -51,9 +51,10 @@ def main():
         st.header("AI assist")
     chat = st.sidebar.container()
     location_chat = chat.chat_input(placeholder="Chat about listings")
+    coordinates = None
     if location_chat:
         chat.write(f"User has sent the following prompt: {location_chat}")
-        generate_response(
+        coordinates = generate_response(
             location_chat,
             _dataframes=[
                 daycare_data.withColumnRenamed("geocodes.main.latitude","latitude") \
@@ -65,8 +66,10 @@ def main():
                 ],
             #  dataframes = [daycare_data,listings_data.reset_index()],
             _container=chat,
-        )
-
+            )
+    if coordinates:
+        chat.write(coordinates)
+        chat.write(coords_to_dict(coordinates))
     # Filter listings based on bedroom and price slider
     listings_data = filter_listings(
         data=listings_data,
@@ -90,15 +93,15 @@ def main():
         # Create container with aggregate data to sit above map
         container = st.container(border=False)
         # display map and return map bounds to filter data
+        #st.write(grouped_listings)
         bounding_box = display_map(
             listings_data=listings_data,
             aggregate_listing_data=grouped_listings,
             places_data=daycare_data,
+            coordinates = coordinates,
             places_name="Day cares"
         )
-        #bounding_box=[47.59701344779626, -122.33464583370677,47.622872149950474, -122.31649393412057]
-        #
-
+        
         # filter listings based on map bounds for listing metrics
         listings = filter_listings(data=listings_data, bounding_box=bounding_box)
         # filter sales based on map bounds and bedroom/date filter
