@@ -14,7 +14,6 @@ The primary aim is to provide develop python programming skills, utilising cloud
 * Explore retrieval augmented generation with foundation models to answer user queries on presented data.
   
 ## Next Steps
-* Move data processing to pyspark (currently using pandas) to assist with computing speed.
 * Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
 * Add neigbourhood identifiers to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
 * Provide more complex temporal and spatial analysis utilising historical sales data.
