@@ -11,11 +11,11 @@ Streamlit is used to build the app. The project is hosted with Codespaces. Code 
 The primary aim is to provide develop python programming skills, utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
 * Look in to spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
 * Combine data on property listings, points of interest and transportation to assist with location choice.
-* Explore retrieval augmented generation with foundation models to answer user queries on presented data.
+* Explore retrieval augmented generation with foundation models to interact user queries with presented data.
   
 ## Next Steps
 * Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
-* Add neigbourhood identifiers to record level data or use a different model (gpt-3.5 cannot calculate distances between places).
+* Explore use of additional AI tools and contextual data to assist RAG agent.
 * Provide more complex temporal and spatial analysis utilising historical sales data.
 * Improve visualisation of relative prices in map.
 * Build functionality of AI chat.
