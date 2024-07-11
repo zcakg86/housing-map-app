@@ -1,5 +1,5 @@
 # Housing Map App
-This project is an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market understanding.
+This project is an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market knowledge with regard to location.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
 URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/ 
@@ -9,30 +9,29 @@ Streamlit is used to build the app. The project is hosted with Codespaces. Code 
 ![screenshot of the app](streamlit_app.png "App screenshot")
 ## Aims
 The primary aim is to provide develop python programming skills, utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
-* Look in to spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than coordinate representation, and how this assists with implementing machine learning.
+* Look in to spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than coordinate representation, and how this might assist with implementing machine learning.
 * Combine data on property listings, points of interest and transportation to assist with location choice.
 * Explore retrieval augmented generation with foundation models to interact user queries with presented data.
   
 ## Next Steps
-* Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
-* Explore use of additional AI tools and contextual data to assist RAG agent.
-* Provide more complex temporal and spatial analysis utilising historical sales data.
-* Improve visualisation of relative prices in map.
-* Build functionality of AI chat.
 * Allow AI chat response to interact with map.
-* Improve overall presentation and formatting of app.
+* Program and visualise more complex temporal and spatial analysis utilising historical sales data. Explore use of machine learning methods vs traditional statistical/econometric tbc.
+* Improve visualisation of relative prices in map.
+* Bring in transport network data for accessiblity considerations.
+* Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
+* Build functionality of AI chat. Explore use of additional AI tools and contextual data to assist RAG agent.
 
 ## Data
-Sales data: kingco_sales.csv\
+Residential Sales data: kingco_sales.csv\
 https://www.kaggle.com/datasets/andykrause/kingcountysales/data \
 Andy Krause\
 Data produced from King County Assessors Office data.
 
-Listing data: Zillow data, from RapidAPI sources\
+Residential Listings: webscraped Zillow listing data, from RapidAPI sources\
 https://rapidapi.com/apimaker/api/zillow-com1 \
 https://rapidapi.com/s.mahmoud97/api/zillow56
 
-Point of interest data:
+Point of interest data:\
 Foursquare API
 
 Icon: from Noun Project\
