@@ -1,5 +1,5 @@
 # Housing Map App
-This project is an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market knowledge with regard to location.
+This personal project is an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market knowledge with regard to location.
 Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
 
 URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/ 
@@ -25,9 +25,9 @@ The primary aim is to provide develop python programming skills, utilising cloud
 Residential Sales data: kingco_sales.csv\
 https://www.kaggle.com/datasets/andykrause/kingcountysales/data \
 Andy Krause\
-Data produced from King County Assessors Office data.
+Data produced from King County Department of Assessments data.
 
-Residential Listings: webscraped Zillow listing data, from RapidAPI sources\
+Residential Listings: webscraped Zillow listing data from RapidAPI sources\
 https://rapidapi.com/apimaker/api/zillow-com1 \
 https://rapidapi.com/s.mahmoud97/api/zillow56
 
