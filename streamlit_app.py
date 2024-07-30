@@ -1,5 +1,5 @@
 from functions import *
-
+### means to do
 APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
 
@@ -106,6 +106,8 @@ def main():
         listings = filter_listings(data=listings_data, bounding_box=bounding_box)
         # filter sales based on map bounds and bedroom/date filter
         # filter data with bounding_box and dates/beds
+
+        ### move this to somewhere else?
         sales_data = prepare_sales_data(sales_data)
         if bounding_box:
         # filter for 'This area' in sale price chart, and recent sales
@@ -146,6 +148,7 @@ def main():
                 metric="median",
                 metric_title=f"Median sale price",
             )
+        ### rewrite this caption
         container.caption(
             "Metrics above and historic sales prices are based on map area displayed in window, and the bedroom and date filters selected."
         )
