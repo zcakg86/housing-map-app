@@ -15,8 +15,8 @@ from pyspark.sql import SparkSession, functions as F
 import h3_pyspark
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from shapely.geometry import Polygon, shape
-import json
 import re
+import json
 
 #from langchain_community.llms import OpenAI
 #from langchain.agents.agent_types import AgentType
@@ -115,6 +115,20 @@ def display_price_filter(data, variable_name, container):
     # st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
     return price_min, price_max
 
+def code_dates(data, date_column='sale_date', input_format='yyyy-MM-dd', add_month=True):
+    """
+    Set date_column to a PySpark date format.
+    Default input format: YYYY-MM-DD
+    """
+    # Convert the date column to PySpark DateType - shouldn't need to as schema already has as date
+    #data = data.withColumn(date_column, F.to_date(F.col(date_column), input_format)) shouldn't need
+    
+    if add_month:
+        # Extract year and month, and create a year-month period column
+        data = data.withColumn("year_month", F.date_format(F.col(date_column), "yyyyMM").cast("int"))
+    
+    return data
+
 def display_time_filter(data, date_column, container, default_start_date=""):
     """Display date filter based on data values, into specified container.
        default_start_date should be in format 'YYYY-MM' if specified"""
@@ -146,11 +160,13 @@ def filter_sales_data(data, date_min=None, date_max=None, beds_min=None, beds_ma
         data = data.filter((F.col("beds") >= int(beds_min)) & (F.col("beds") <= int(beds_max)))
     
     # Filter by date range if specified
-    if date_min is not None and date_max is not None:
-        data = data.withColumn("year_month", F.date_format(F.col("sale_date"), "yyyyMM").cast("int"))
-        data = data.filter((F.col("year_month") >= int(date_min)) & (F.col("year_month") <= int(date_max)))
+    if date_min is not None:
+        data = data.filter(F.col("year_month") >= int(date_min)) 
+    if date_max is not None:
+        data = data.filter(F.col("year_month") <= int(date_max))
     
     return data
+
 
 def prepare_sales_data(
     data,
@@ -171,10 +187,9 @@ def prepare_sales_data(
 ):
     # Calculate price_per_sqft
     data = data.withColumn("price_per_sqft", F.col("sale_price") / F.col("sqft"))
-    
+    # Create year_month column
     # Select specified columns
     data = data.select(*cols_keep)
-    
     return data
 
 def filter_listings(

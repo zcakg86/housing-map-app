@@ -5,7 +5,6 @@ h3pandas
 chromadb
 streamlit
 openai
-json
 langchain
 langchain-experimental
 langchain-community
@@ -18,3 +17,4 @@ plotly_express
 pyspark
 h3_pyspark
 shapely
+pykrige
