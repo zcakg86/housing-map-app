@@ -1,6 +1,6 @@
 # Housing Map App
-This personal project is a work in progress and an implementation of an interactive web map, utilising spatial data and AI to assist in housing search and housing market knowledge with regard to location.
-Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessiblity to childcare).
+This personal project is a work in progress. It implements an interactive web map, utilizing spatial data and AI to assist in housing search and housing market knowledge regarding location.
+Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessibility to childcare).
 
 URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/ 
 
@@ -8,26 +8,26 @@ Streamlit is used to build the app. The project is hosted with Codespaces. Code 
 
 ![screenshot of the app](streamlit_app.png "App screenshot")
 ## Aims
-The primary aim is to provide develop python programming skills, utilising cloud platforms and spatial tools to develop novel ways to present housing market analysis, for the individual user.
-* Look in to spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than coordinate representation, and how this might assist with implementing machine learning.
-* Combine data on property listings, points of interest and transportation to assist with location choice.
+The primary aim is to provide develop my Python programming skills, utilizing cloud platforms and spatial tools to develop ways to present housing market analysis for interested individual users.
+* Look into spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than an xy-coordinate representation, and how this might assist with implementing machine learning.
+* Combine data on property listings, points of interest, and transportation to assist with location choice.
 * Explore retrieval augmented generation with foundation models to interact user queries with presented data.
   
 ## Next Steps
-* Allow AI chat response to interact with map.
-* Program and visualise more complex temporal and spatial analysis utilising historical sales data. Explore use of machine learning methods vs traditional statistical/econometric tbc.
-* Improve visualisation of relative prices in map.
-* Bring in transport network data for accessiblity considerations.
-* Call listings and POI APIs directly in app (currently the data app uses static data stored as csvs, and listings are out of date).
-* Build functionality of AI chat. Explore use of additional AI tools and contextual data to assist RAG agent.
+* Allow AI chat response to interact with the map.
+* Program and visualize more complex temporal and spatial analysis utilizing historical sales data. Explore the use of machine learning methods vs. traditional statistical/econometric methods.
+* Improve visualization of relative prices within the map.
+* Bring in transport network data for accessibility considerations.
+* Call listings and POI APIs directly within the app (currently the data app uses static data stored as CSV files, and listings are out of date).
+* Build on the functionality of the AI chat. Explore using additional AI tools and contextual data to assist the RAG agent.
 
 ## Data
 Residential Sales data: kingco_sales.csv\
 https://www.kaggle.com/datasets/andykrause/kingcountysales/data \
 Andy Krause\
-Data produced from King County Department of Assessments data.
+Data produced from data provided by the King County Department of Assessments.
 
-Residential Listings: webscraped Zillow listing data from RapidAPI sources\
+Residential Listings: Web scraped Zillow listing data from RapidAPI sources\
 https://rapidapi.com/apimaker/api/zillow-com1 \
 https://rapidapi.com/s.mahmoud97/api/zillow56
 
@@ -38,8 +38,8 @@ Icon: from Noun Project\
 Firza Alamsyah
 
 ### To be used in further analysis:
-Income by Census Tract, 2000, 2006-2022 (American Community Survey 5 year period) American Community Survey.
-(Income data used to be combined with changes in house prices - not to compare incomes of residents by neighbournhood).
+Income by Census Tract, 2000, 2006-2022 (American Community Survey 5-year period) American Community Survey.
+(Income data planned to be combined with changes in house prices for analysis, rather than to compare residents' incomes by neighbourhood).
 Steven Manson, Jonathan Schroeder, David Van Riper, Katherine Knowles, Tracy Kugler, Finn Roberts, and Steven Ruggles. IPUMS National Historical Geographic Information System: Version 18.0 [dataset]. Minneapolis, MN: IPUMS. 2023. http://doi.org/10.18128/D050.V18.0
 https://www.nhgis.org/
 
