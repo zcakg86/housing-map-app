@@ -16,5 +16,6 @@ tabulate
 plotly_express
 pyspark
 h3_pyspark
+h3<4.0
 shapely
 pykrige

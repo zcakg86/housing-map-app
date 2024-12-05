@@ -8,7 +8,7 @@ import branca.colormap as cm
 from langchain.chat_models import ChatOpenAI
 import geopandas
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-import h3pandas
+#import h3pandas
 import time
 # New moving to pyspark
 from pyspark.sql import SparkSession, functions as F
@@ -31,20 +31,65 @@ import json
 #from langchain_experimental.agents.agent_toolkits import create_csv_agent
 #from langchain.agents.initialize import initialize_agent
 
-#@st.cache_data
-def load_data(file, _spark: SparkSession ='', add_h3=False, use_spark = False, lat_col='',lng_col=''):
+def code_dates(data, date_column='sale_date', input_format='yyyy-MM-dd', add_month=True):
+    """
+    Set date_column to a PySpark date format.
+    Default input format: YYYY-MM-DD
+    """
+    # Convert the date column to PySpark DateType - shouldn't need to as schema already has as date
+    #data = data.withColumn(date_column, F.to_date(F.col(date_column), input_format)) shouldn't need
+    
+    if add_month:
+        # Extract year and month, and create a year-month period column
+        data = data.withColumn("year_month", F.date_format(F.col(date_column), "yyyyMM").cast("int"))
+    
+    return data
+
+def prepare_sales_data(
+    _data,
+    cols_keep=[
+        "sale_date",
+        "sale_price",
+        "beds",
+        "sqft",
+        "price_per_sqft",
+        "bath_full",
+        "bath_half",
+        "bath_3qtr",
+        "year_built",
+        "lat",
+        "lng",
+    ],
+):
+    # Calculate price_per_sqft
+    _data = _data.withColumn("price_per_sqft", F.col("sale_price") / F.col("sqft"))
+    # Create year_month column
+    # Select specified columns
+    _data = _data.select(*cols_keep)
+    return _data
+
+@st.cache_resource
+def load_data(file,_spark: SparkSession ='', add_h3=False, use_spark = False, lat_col='',lng_col='', format_dates = False, wrangle_sales_data = False):
     if use_spark == False:
         data = pd.read_csv(file)
         if add_h3 == True :
-            data = data.h3.geo_to_h3(resolution=8, lat_col=lat_col, lng_col=lng_col)
-            data = data.h3.h3_to_geo_boundary().reset_index()
+            data = data.h3_pyspark.geo_to_h3(resolution=8, lat_col=lat_col, lng_col=lng_col)
+            data = data.h3_pyspark.h3_to_geo_boundary().reset_index()
     else:
         data = _spark.read.csv(file, header=True, inferSchema=True) # type: ignore
         if add_h3 == True:
             data = data.withColumn('h3_8', h3_pyspark.geo_to_h3(lat_col,lng_col,F.lit(8)))
+        if wrangle_sales_data == True:
+            data = prepare_sales_data(data)
+        if format_dates == True:
+            # drop existing year_month column if exists
+            data = data.drop("year_month")
+            # format date column and add year_month
+            data = code_dates(data)
+
     return data
 
-@st.cache_data
+@st.cache_resource
 def generate_response(input_text, _dataframes, _container):
     """ "Function to specify AI response and write response to container"""
     dataframe_agent = create_pandas_dataframe_agent(
@@ -81,165 +126,133 @@ def coords_to_dict(coord_list):
           dict_new[item]['lng'] = float(i[1])
   return(dict_new)
 
+##@st.cache_data 
+## to use widget must be seperated from value. applied to all select containers
 
-def display_bedroom_filter(data, container):
-    """Display bedroom slider to filter data, into specified container"""
-    beds_list = data.select("beds").distinct().rdd.flatMap(lambda x: x).collect()
-    beds_list.sort()
-    beds_min = beds_list[0]
-    beds_max = beds_list[-1]
 
-    # create slider and return values for filters
-    beds_min, beds_max = container.select_slider(
-        "Bedrooms", options=beds_list, value=(beds_min, beds_max)
-    )
-    # st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
-    return beds_min, beds_max
-
-def display_price_filter(data, variable_name, container):
-    """Display price slider, into specified container"""
+@st.cache_data
+def get_numerical_summary(_data, variable_name, quartiles = True):
+    """Get range of numerical variable in _data"""
     # Calculate min, max, and quantiles using PySpark
-    min_price = data.agg(F.min(variable_name)).collect()[0][0]
-    lq = data.approxQuantile(variable_name, [0.25], 0.01)[0]
-    uq = data.approxQuantile(variable_name, [0.75], 0.01)[0]
-    max_price = data.agg(F.max(variable_name)).collect()[0][0]
+    min = _data.agg(F.min(variable_name)).collect()[0][0]
+    max = _data.agg(F.max(variable_name)).collect()[0][0]
+    array = [min, max]
+    if quartiles == True:    
+        lq = _data.approxQuantile(variable_name, [0.25], 0.01)[0]
+        uq = _data.approxQuantile(variable_name, [0.75], 0.01)[0]
+        array.append(lq)
+        array.append(uq)
     
-    # Create slider and return values for filters
-    price_min, price_max = container.slider(
-        "Listing Price",
-        min_value=int(round(min_price, -4)),
-        max_value=int(round(max_price, -4)),
-        value=(int(lq), int(uq)),
-        step=20000,
+    return array
+
+def display_range_filter(summary_array, _container, title, step = 20000):
+    """Display continuous integer slider, into specified container"""
+    # if length of array is 4, last 2 objects are defaults, else use full range as defaults
+    if len(summary_array)==4:
+        min_default = summary_array[2]
+        max_default = summary_array[3]
+    else: 
+        min_default = summary_array[0]
+        max_default = summary_array[3] 
+    # Create slider from range and return values for filters
+    selected_min, selected_max = _container.slider(
+        title,
+        min_value=int(round(summary_array[0], -4)),
+        max_value=int(round(summary_array[1], -4)),
+        value=(int(round(min_default, -4)),int(round(max_default, -4))),
+        step=step
     )
-    # st.header(f'Showing only {beds_min} to {beds_max} bedroom sales and listings')
-    return price_min, price_max
+    _container.caption(f'{title} selected: {selected_min} to {selected_max}')
+    return selected_min, selected_max
 
-def code_dates(data, date_column='sale_date', input_format='yyyy-MM-dd', add_month=True):
-    """
-    Set date_column to a PySpark date format.
-    Default input format: YYYY-MM-DD
-    """
-    # Convert the date column to PySpark DateType - shouldn't need to as schema already has as date
-    #data = data.withColumn(date_column, F.to_date(F.col(date_column), input_format)) shouldn't need
-    
-    if add_month:
-        # Extract year and month, and create a year-month period column
-        data = data.withColumn("year_month", F.date_format(F.col(date_column), "yyyyMM").cast("int"))
-    
-    return data
-
-def display_time_filter(data, date_column, container, default_start_date=""):
-    """Display date filter based on data values, into specified container.
-       default_start_date should be in format 'YYYY-MM' if specified"""
+@st.cache_data
+def get_distinct_sort(_data, variable_name):
+    """Get distinct values based on data values, and sort"""
     # Extract year and month from the date column
-    data = data.withColumn('year_month', F.date_format(F.col(date_column), 'yyyy-MM'))
-    
+    # Edited out as already present in data
+    # data = data.withColumn('year_month', F.date_format(F.col(date_column), 'yyyy-MM'))
     # Extract unique year-month values
-    year_month_list = data.select('year_month').distinct().orderBy('year_month').rdd.flatMap(lambda x: x).collect()
-    
+    distinct_list = _data.select(variable_name).distinct().rdd.flatMap(lambda x: x).collect()
+    distinct_list.sort()
+    return distinct_list
+       
+def display_select_slider(list, _container, title, default_min=None):
+    """Create slider from list of options,  """
     # Determine min and max values
-    min_date = year_month_list[0]
-    if default_start_date:
-        min_date = default_start_date
-    max_date = year_month_list[-1]
-    
-    # Create slider and return values for filters
-    # value parameter specifies default positions
-    min_date, max_date = container.select_slider(
-        "Monthly filter for sales history", options=year_month_list, value=(min_date, max_date)
-    )
-    # st.header(f'Sale date filter: {min_date} to {max_date}')
-    return min_date, max_date
+    min = list[0]
+    max = list[-1]
 
-def filter_sales_data(data, date_min=None, date_max=None, beds_min=None, beds_max=None):
+    if default_min:
+        min = default_min
+    selected_min, selected_max = _container.select_slider(
+        title, options=list, value=(min, max)
+    )
+    _container.caption(f'{title} selected: {selected_min} to {selected_max}')
+    return selected_min, selected_max
+
+def filter_sales_data(_data, date_min=None, date_max=None, beds_min=None, beds_max=None):
     """Filter sales data based on filters"""
     
     # Filter by bedroom count if specified
     if beds_min is not None and beds_max is not None:
-        data = data.filter((F.col("beds") >= int(beds_min)) & (F.col("beds") <= int(beds_max)))
+        _data = _data.filter((F.col("beds") >= int(beds_min)) & (F.col("beds") <= int(beds_max)))
     
     # Filter by date range if specified
     if date_min is not None:
-        data = data.filter(F.col("year_month") >= int(date_min)) 
+        _data = _data.filter(F.col("year_month") >= int(date_min)) 
     if date_max is not None:
-        data = data.filter(F.col("year_month") <= int(date_max))
+        _data = _data.filter(F.col("year_month") <= int(date_max))
     
-    return data
-
-
-def prepare_sales_data(
-    data,
-    cols_keep=[
-        "year_month",
-        "sale_date",
-        "sale_price",
-        "beds",
-        "sqft",
-        "price_per_sqft",
-        "bath_full",
-        "bath_half",
-        "bath_3qtr",
-        "year_built",
-        "lat",
-        "lng",
-    ],
-):
-    # Calculate price_per_sqft
-    data = data.withColumn("price_per_sqft", F.col("sale_price") / F.col("sqft"))
-    # Create year_month column
-    # Select specified columns
-    data = data.select(*cols_keep)
-    return data
+    return _data
 
 def filter_listings(
-    data, bounding_box=None, beds_min=None, beds_max=None, price_min=None, price_max=None
+    _data, bounding_box=None, beds_min=None, beds_max=None, price_min=None, price_max=None
 ):
     """Filter listings based on bedroom filter and/or map bounds"""
     
     # Filter by bounding box if specified
     if bounding_box:
-        data = data.filter((F.col("latitude") >= bounding_box[0]) & (F.col("latitude") <= bounding_box[2]) &
+        _data = _data.filter((F.col("latitude") >= bounding_box[0]) & (F.col("latitude") <= bounding_box[2]) &
                            (F.col("longitude") >= bounding_box[1]) & (F.col("longitude") <= bounding_box[3]))
     
     # Filter by bedroom count if specified
     if beds_min is not None and beds_max is not None:
-        data = data.filter((F.col("bedrooms") >= int(beds_min)) & (F.col("bedrooms") <= int(beds_max)))
+        _data = _data.filter((F.col("bedrooms") >= int(beds_min)) & (F.col("bedrooms") <= int(beds_max)))
     
     # Filter by price range if specified
     if price_min is not None and price_max is not None:
-        data = data.filter((F.col("price") >= int(price_min)) & (F.col("price") <= int(price_max)))
+        _data = _data.filter((F.col("price") >= int(price_min)) & (F.col("price") <= int(price_max)))
     
-    return data
+    return _data
 
-def aggregate_sales(data, filtered_data):
+def aggregate_sales(_data, _filtered_data):
     """Aggregates sales by month for chart. Uses unfiltered data (all areas) and filtered data (within map bounds)"""
     
     # Aggregate for all sales
-    all_sales_monthly = data.groupBy("year_month") \
+    all_sales_monthly = _data.groupBy("year_month") \
                             .agg(
-                                F.expr('percentile_approx(price_per_sqft, 0.5)').alias('price_per_sqft'),
+                                F.expr('percentile_approx(price_per_sqft, 0.5)').alias('median_price_per_sqft'),
                                 F.count("sqft").alias("observations")
                             ) \
                             .withColumn("Location", F.lit("All areas"))
     
     # Aggregate for filtered sales
-    filtered_sales_monthly = filtered_data.groupBy("year_month") \
+    filtered_sales_monthly = _filtered_data.groupBy("year_month") \
                                           .agg(
-                                              F.expr('percentile_approx(price_per_sqft, 0.5)').alias('price_per_sqft'),
+                                              F.expr('percentile_approx(price_per_sqft, 0.5)').alias('median_price_per_sqft'),
                                               F.count("sqft").alias("observations")
                                           ) \
-                                          .withColumn("Location", F.lit("Map area"))
+                                          .withColumn("Location", F.lit("Filtered area"))
     
     # Concatenate the two DataFrames
     sales_monthly = all_sales_monthly.union(filtered_sales_monthly)
     
     return sales_monthly
 
-def aggregate_listings(data):
+def aggregate_listings(_data):
     """Aggregates listings by h3 geometry for map colors and small area statistics. Adds geometry and properties column, ready to convert to geojson"""
     # Filter data where pricePerSqft and h3_8 is not null
-    data_filtered = data.filter(F.col("pricePerSqft").isNotNull()) \
+    data_filtered = _data.filter(F.col("pricePerSqft").isNotNull()) \
                     .filter(F.col("h3_8").isNotNull())
     # Group by H3 index and calculate median pricePerSqft and count
     grouped_data = data_filtered.groupBy("h3_8") \
@@ -272,32 +285,20 @@ def display_sales_history(data, monthly_data):
     fig = px.line(
         monthly_data.orderBy(F.col("year_month").asc()),
         x="year_month",
-        y="price_per_sqft",
+        y="median_price_per_sqft",
         color="Location",
+        hover_data = {"median_price_per_sqft":":.2f",
+                      "observations":True,
+                      "year_month":False,"Location":False},
+        color_discrete_map={'All areas': 'lightsteelblue', 'Filtered area': 'steelblue'},
         labels={
             "year_month": "month",
-            "price_per_sqft": "price per square foot",
-            "observations": "number of sales",
-        },
+            "median_price_per_sqft": "price per square foot"}
     )
-    fig.update_traces(mode="markers+lines", hovertemplate=None)
+    fig.update_traces(mode="markers+lines")
     fig.update_layout(legend_title_text=None, xaxis_type="category",hovermode="x unified")
     st.plotly_chart(fig, use_container_width=True)
     st.subheader("Most recent sales")
-    data = prepare_sales_data(
-        data,
-        [
-            "sale_date",
-            "sale_price",
-            "beds",
-            "sqft",
-            "year_built",
-            "price_per_sqft",
-            "bath_full",
-            "bath_half",
-            "bath_3qtr",
-        ],
-    )
     st.table(
     # Sort by 'sale_date' in descending order
         data = data.orderBy(F.col("sale_date").desc()) \
@@ -506,78 +507,43 @@ def add_listings_data(data, map):
     # add cluster layer to map
     map.add_child(marker_cluster)
 
-def display_map(
-    listings_data, aggregate_listing_data, places_data, coordinates, places_name="places"
+#@st.cache_resource
+def create_map(
+    _listings_data, _aggregate_listing_data, _places_data, coordinates, places_name="places"
 ):
     """Function to set up map, add layers, and run in streamlit"""
     if coordinates:
         st.caption(coordinates)
         listings_map = folium.Map(
         [coordinates[0]['lat'],coordinates[0]['lng']], zoom_start=14   
-    )
+    ) 
+    else:
     # Set map centre as mean of coordinates, set default zoom
-    listings_map = folium.Map(
-        [listings_data.agg(F.mean('latitude')).collect()[0][0], listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
+        listings_map = folium.Map(
+            [_listings_data.agg(F.mean('latitude')).collect()[0][0], _listings_data.agg(F.mean('longitude')).collect()[0][0]], zoom_start=14   
     )
 
     # Add each Layer
-    add_aggregate_layer(data = aggregate_listing_data, map = listings_map)
-    add_places_data(data = places_data, map = listings_map, layer_name = places_name)
-    add_listings_data(data = listings_data, map = listings_map)
+    add_aggregate_layer(data = _aggregate_listing_data, map = listings_map)
+    add_places_data(data = _places_data, map = listings_map, layer_name = places_name)
+    add_listings_data(data = _listings_data, map = listings_map)
         
     ## add layer control option
     folium.LayerControl().add_to(listings_map)
-    
+# return map
+    return listings_map
+
+
     # Create map with st_folium
-    st_map = st_folium(listings_map, use_container_width=True, height=600)
-    #
-    ## not used:  functionality to respond to for click of h3geometry
-    ## h3_08_name = ''
-    ### if st_map['last_active_drawing']:
-    ####    h3_08_name = st_map['last_active_drawing']['properties']['h3_08']
 
-    # Create bounding box from map boumds
-    bounding_box = ""
-    # there is always bounds, need to reset on click
-    if st.button('Reset to map bound'):
-    #if st_map["bounds"]:  # map should have bounds, to use in filter
-        bounding_box = [
-                st_map["bounds"]["_southWest"]["lat"],
-                st_map["bounds"]["_southWest"]["lng"],
-                st_map["bounds"]["_northEast"]["lat"],
-                st_map["bounds"]["_northEast"]["lng"],
-            ]
-# return map bounds
-        return bounding_box  ##, h3_08_name
+    
+def get_bounding_box(map):
+        # Create bounding box from map bounds
+    bounding_box = [
+                map["bounds"]["_southWest"]["lat"],
+                map["bounds"]["_southWest"]["lng"],
+                map["bounds"]["_northEast"]["lat"],
+                map["bounds"]["_northEast"]["lng"],
+        ]
+    return bounding_box
 
-# later implement response schemas and specify tools for generate_response function
-# response_schemas = [
-#    ResponseSchema(name="answer", description="answer to the user's question"),
-#    ResponseSchema(
-#        name="lat",
-#        description="latitude of object in answer"
-#    ),
-#    ResponseSchema(
-#        name="long",
-#        description="longitude of object in answer"
-#    ),
-#    ResponseSchema(
-#        name="name",
-#        description="name of object in answer"
-#    ),
-# ]
-# output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
-# format_instructions = output_parser.get_format_instructions()
-# tools = [
-#    Tool(
-#        name="dataframe_agent",
-#        func=dataframe_agent.invoke,
-#        description="Respond based on the dataframe_agent containing dataframes."
-#    ),
-# ]
-# agent = initialize_agent(
-#    llm=OpenAI(temperature=0, model="davinci-002"),
-#    tools = tools,
-#    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-#    verbose=True
-# )
