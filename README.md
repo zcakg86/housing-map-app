@@ -8,15 +8,18 @@ Streamlit is used to build the app. The project is hosted with Codespaces. Code 
 
 ![screenshot of the app](streamlit_app.png "App screenshot")
 ## Aims
-The primary aim is to provide develop my Python programming skills, utilizing cloud platforms and spatial tools to develop ways to present housing market analysis for interested individual users.
+The primary aim is to provide develop Python programming skills, utilizing cloud platforms and spatial tools to develop ways to present housing market analysis for interested individual users.
 * Look into spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than an xy-coordinate representation, and how this might assist with implementing machine learning.
 * Combine data on property listings, points of interest, and transportation to assist with location choice.
+* Implement ML with neural networks to identify trends in data. 
 * Explore retrieval augmented generation with foundation models to interact user queries with presented data.
   
 ## Next Steps
+* Program and visualize more complex temporal and spatial analysis utilizing historical sales data. Use of machine learning methods rather than traditional statistical/econometric methods.
+* Improve visualization of relative prices within the map - bring in attention scores from neural network. 
+
+Nice to Haves:
 * Allow AI chat response to interact with the map.
-* Program and visualize more complex temporal and spatial analysis utilizing historical sales data. Explore the use of machine learning methods vs. traditional statistical/econometric methods.
-* Improve visualization of relative prices within the map.
 * Bring in transport network data for accessibility considerations.
 * Call listings and POI APIs directly within the app (currently the data app uses static data stored as CSV files, and listings are out of date).
 * Build on the functionality of the AI chat. Explore using additional AI tools and contextual data to assist the RAG agent.
