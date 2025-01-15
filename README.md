@@ -1,6 +1,6 @@
 # Housing Map App
 This personal project is a work in progress. It implements an interactive web map, utilizing spatial data and AI to assist in housing search and housing market knowledge regarding location.
-Listings data is combined with historic sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessibility to childcare).
+Listings data is combined with historical sales data (for trends), and points of interest (in this example daycares: targeting those interested in accessibility to childcare).
 
 URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/ 
 
@@ -8,8 +8,8 @@ Streamlit is used to build the app. The project is hosted with Codespaces. Code 
 
 ![screenshot of the app](streamlit_app.png "App screenshot")
 ## Aims
-The primary aim is to provide develop Python programming skills, utilizing cloud platforms and spatial tools to develop ways to present housing market analysis for interested individual users.
-* Look into spatial representations: I want to try out h3index as a hierarchical grid spatial representation rather than an xy-coordinate representation, and how this might assist with implementing machine learning.
+The primary aim is to provide develop Python programming skills, utilizing ML and spatial tools to construct and present housing market analysis.
+* Look into spatial representations: e.g. h3index as a hierarchical grid spatial representation rather than an xy-coordinate representation, and how this can assist with implementing machine learning.
 * Combine data on property listings, points of interest, and transportation to assist with location choice.
 * Implement ML with neural networks to identify trends in data. 
 * Explore retrieval augmented generation with foundation models to interact user queries with presented data.
