@@ -6,7 +6,7 @@ URL when running: https://turbo-cod-r4w75j5jjrqhx64p-8501.app.github.dev/
 
 Streamlit is used to build the app. The project is hosted with Codespaces. Code is all written in Python. OpenAI's GPT-3.5-turbo-0125 model is used for the chat function.
 
-![screenshot of the app](streamlit_app.png "App screenshot")
+![screenshot of the app](outputs/streamlit_app.pngstreamlit_app.png "App screenshot")
 ## Aims
 The primary aim is to provide develop Python programming skills, utilizing ML and spatial tools to construct and present housing market analysis.
 * Look into spatial representations: e.g. h3index as a hierarchical grid spatial representation rather than an xy-coordinate representation, and how this can assist with implementing machine learning.

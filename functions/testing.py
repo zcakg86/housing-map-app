@@ -36,8 +36,8 @@ def main():
     sales_data = sales_data.withColumn('ppsf_adj', F.col("price_per_sqft")*F.col("adjustment"))
     st.caption("Prices adjusted to month : "+str(latest_month))
     #filtered_data = sales_data.select("ppsf_adj","lat","lng").toPandas().head(100)
-    sales_data.toPandas().to_csv('sales_data.csv')
-    # filtered_data.to_csv('filtered_data.csv')
+    sales_data.toPandas().to_csv('outputs/sales_data.csv')
+    # filtered_data.to_csv('outputs/filtered_data.csv')
     z = krige(sales_data)
     st.table(z)
     

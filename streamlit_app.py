@@ -1,4 +1,4 @@
-from functions import *
+from functions.webmap import *
 ### means to do
 APP_TITLE = "Housing search map app"
 APP_SUB_TITLE = "Produced by Marie Thompson using streamlit. Data from Zillow, Foursquare API and King County Department of Assessments"
