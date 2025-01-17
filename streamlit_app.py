@@ -19,11 +19,13 @@ def main():
     )
 
     # Place title and subtitle into title container
-    titles = st.container(border=False)
-    titles.title(APP_TITLE)
-    titles.caption(APP_SUB_TITLE)
-
-
+    header, progress = st.container(border=False).columns((5,1))
+    with header:
+        st.title(APP_TITLE)
+        st.caption(APP_SUB_TITLE)
+    with progress: 
+        empty = st.header("")
+        updates = st.empty()
     # record set up time
     start_time = time.time()
 
@@ -38,8 +40,7 @@ def main():
     daycare_data = load_data("data/daycares.csv", _spark = spark, use_spark = True)
 
     data_loaded_time = time.time()
-    titles.caption("%s seconds to load data" % round(data_loaded_time - start_time,2))
-
+    updates.status(label="%s seconds to load data" % round(data_loaded_time - start_time,2))
     # Display filters in sidebar
     with st.sidebar:
         st.header("Apply filters")
@@ -93,7 +94,7 @@ def main():
     )
 
     slicer_filter_time = time.time()
-    titles.caption("%s seconds to filter data on slicers" % round(slicer_filter_time - data_loaded_time,2))
+    updates.status("%s seconds to filter data on slicers" % round(slicer_filter_time - data_loaded_time,2))
 
 
     # Break page into two columns (left side containing map is wider)
@@ -122,21 +123,21 @@ def main():
             places_name="Day cares"
         )
         # launch streamlit object of map
-        st_map = st_folium(complete_map, use_container_width=True, height=600)
+        st_map = folium_static(complete_map, width=600, height=600)
         map_loaded_time = time.time()
-        titles.caption("%s seconds to load map" % round(map_loaded_time - slicer_filter_time,2))
+        updates.status("%s seconds to load map" % round(map_loaded_time - slicer_filter_time,2))
         
         bounding_box = ""
         if map_filter_button:
             bounding_box = get_bounding_box(map=st_map)
-            titles.caption(bounding_box)
+            updates.status(bounding_box)
         # filter listings based on map bounds for listing metrics
             # filter for 'This area' in sale price chart, and recent sales
             listings = filter_listings(_data=listings_data, bounding_box=bounding_box)
             # filter sales based on map bounds and bedroom/date filter
             # filter data with bounding_box and dates/beds
             listings_filter_time = time.time()
-            titles.caption("%s seconds to filter listings on bounding box" % round(listings_filter_time - map_loaded_time,2))
+            updates.status("%s seconds to filter listings on bounding box" % round(listings_filter_time - map_loaded_time,2))
 
             area_filtered_sales = sales_data.filter(
                 (sales_data['lat'].between(bounding_box[0], bounding_box[2])) &
@@ -146,10 +147,10 @@ def main():
             area_filtered_sales = sales_data
         
         sales_filter_time = time.time()
-        titles.caption("%s seconds to filter sales on bounding box" % round(sales_filter_time - listings_filter_time,2))
+        updates.status("%s seconds to filter sales on bounding box" % round(sales_filter_time - listings_filter_time,2))
 
-        titles.caption(sales_data.columns)
-
+        #sales_data.columns
+        #['sale_date', 'sale_price', 'beds', 'sqft', 'price_per_sqft', 'bath_full', 'bath_half', 'bath_3qtr', 'year_built', 'lat', 'lng', 'year_month']
         # Place listing metrics
         with col1:
             display_listings_aggregate(
@@ -189,7 +190,7 @@ def main():
         display_sales_history(data=area_filtered_sales, monthly_data=monthly_sales)
 
     end_time = time.time()
-    titles.caption("%s seconds to load everything" % round(end_time - start_time,2))
+    updates.status("%s seconds to load everything" % round(end_time - start_time,2))
 
 if __name__ == "__main__":
     main()

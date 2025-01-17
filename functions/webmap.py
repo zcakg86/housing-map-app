@@ -3,7 +3,7 @@ import pandas as pd
 import folium
 import folium.plugins
 import plotly.express as px
-from streamlit_folium import st_folium
+from streamlit_folium import st_folium, folium_static
 import branca.colormap as cm
 from langchain.chat_models import ChatOpenAI
 import geopandas
@@ -507,7 +507,6 @@ def add_listings_data(data, map):
     # add cluster layer to map
     map.add_child(marker_cluster)
 
-#@st.cache_resource
 def create_map(
     _listings_data, _aggregate_listing_data, _places_data, coordinates, places_name="places"
 ):
@@ -530,8 +529,9 @@ def create_map(
         
     ## add layer control option
     folium.LayerControl().add_to(listings_map)
+    st.session_state.map = listings_map
 # return map
-    return listings_map
+    return st.session_state.map
 
 
     # Create map with st_folium
